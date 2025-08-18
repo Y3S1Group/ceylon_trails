@@ -1,9 +1,9 @@
 
-# 🌴 Ceylon Trails - The Travel Companion 
+# Ceylon Trails - The Travel Companion 
 
 A travel companion platform built with the MERN stack where users can document, share, and discover travel experiences across Sri Lanka and beyond.
 
-## 👥 Contributors / Team Members
+## Contributors / Team Members
 
 - **[Thimeth Sathmika](URL)** 
 - **[Hiruvinda ](URL)** 
@@ -18,7 +18,7 @@ A travel companion platform built with the MERN stack where users can document, 
 - **Content Discovery** - Browse, search, filter posts with interactive maps
 - **Engagement Features** - Comments, voting, save posts, content reporting
 
-## 🛠 Tech Stack & Libraries
+## Tech Stack & Libraries
 
 ### Frontend
 - **[React.js](https://reactjs.org/)** – Fast, component-based UI   
@@ -39,8 +39,20 @@ A travel companion platform built with the MERN stack where users can document, 
 
 ```bash
   git clone https://github.com/organization-name/ceylon-trails.git
-  cd ceylon-trails
+  cd ceylon_trails
 ```
+2. Fetch All Remote Branches
+
+```bash
+  git fetch --all
+```
+3. Checkout to Branch
+
+```bash
+  git checkout <<branch name>>
+```
+
+
 
 
 
