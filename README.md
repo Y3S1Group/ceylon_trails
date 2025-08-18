@@ -44,14 +44,30 @@ A travel companion platform built with the MERN stack where users can document, 
 2. Fetch All Remote Branches
 
 ```bash
+  # Fetch all remote branches
   git fetch --all
+  
+  # See all available branches
+  git branch -a
 ```
 3. Checkout to Branch
 
 ```bash
   git checkout <<branch name>>
 ```
+4. Frontend Setup & Run
 
+```bash
+  cd client
+  npm run dev
+```
+
+5. Backend Setup & Run
+
+```bash
+  cd server
+  npm run server
+```
 
 
 
