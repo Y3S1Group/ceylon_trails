@@ -38,7 +38,7 @@ A travel companion platform built with the MERN stack where users can document, 
 1. Clone the repository
 
 ```bash
-  git clone https://github.com/organization-name/ceylon-trails.git
+  git clone https://github.com/Y3S1Group/ceylon_trails.git
   cd ceylon_trails
 ```
 2. Fetch All Remote Branches
