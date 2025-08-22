@@ -1,0 +1,58 @@
+import Posts from "../models/Posts";
+
+export const createPost = async (req, res) => {
+    try {
+        const { userId, caption, location, imageUrls, tags } = req.body;
+
+        if (!userId || !caption || !location || !imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
+            return res.status(400).json ({
+                success: false,
+                message: 'User ID, caption, location and at least one image are required'
+            });
+        }
+
+        if (imageUrls.length > 5) {
+            return res.status(400).json ({
+                success: false,
+                message: 'Maximum 5 images are allowed per post'
+            });
+        }
+
+        if (tags && tags.length > 10) {
+            return res.status(400).json ({
+                success: false,
+                message: 'Mamimum 10 tags are allowed per post'
+            });
+        }
+
+        const processedTags = tags ? 
+            [...new Set(tags.map(tag => 
+                tag.trim().toLowerCase()).filter(tags => tags.length > 0)
+            )] : [];
+
+        const newPost = new Posts({
+            userId, caption, location, imageUrls, tags: processedTags
+        });
+
+        const savedPost = await newPost.save();
+        const populatedPost = await Posts.findById(savedPost._id)
+            .populate('userId', 'username email')
+            .populate('comments.userId', 'username email')
+        
+        console.log('Post created successfully');
+
+        res.status(201).json({
+            success: true,
+            message: 'Post created successfully',
+            data: populatedPost
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error creating post',
+            error: error.message
+        });
+    }
+};
+
