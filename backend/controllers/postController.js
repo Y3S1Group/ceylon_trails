@@ -56,6 +56,34 @@ export const createPost = async (req, res) => {
     }
 };
 
+export const getPost = async (req, res) => {
+    try {
+        const { postId } = req.params;
+
+        const post = await Posts.findById(postId)
+            .populate('userId', 'username email')
+            .populate('comments.userId', 'username email');
+        
+        if (!post) {
+            return res.status(400).json({
+                success: false,
+                message: 'Post not found'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: post
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
 
 export const getUserPosts = async (req, res) => {
     try {
@@ -78,4 +106,5 @@ export const getUserPosts = async (req, res) => {
         });
     }
 };
+
 
