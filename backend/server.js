@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import connectDB from "./config/database.js";
+import postRoutes from "./routes/postRoutes.js"
 
 dotenv.config();
 
@@ -26,7 +27,7 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => {
     res.send('Hello, from Server')
 })
-
+app.get('/api/posts', postRoutes);
 
 
 app.use((err, req, res, next) => {
