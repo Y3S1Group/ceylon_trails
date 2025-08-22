@@ -107,4 +107,41 @@ export const getUserPosts = async (req, res) => {
     }
 };
 
+export const getAllPosts = async (req, res) => {
+     try {
+        const { page = 1, limit = 10, location } = req.query;
+
+        const filter = {};
+        if (location) {
+            filter.location = { $regex: location, $options: 'i' };
+        }
+
+        const posts = await Posts.find(filter)
+            .populate('userId', 'username email')
+            .populate('comments.userId', 'username email')
+            .sort({ createdAt: -1 })
+            .limit(limit * 1)
+            .skip((page -1 ) * limit);
+
+        const total = await Posts.countDocuments(filter);
+
+        res.status(200).json({
+            success: true,
+            data: posts,
+            pagination: {
+                current: page,
+                pages: Math.ceil(total/ limit),
+                total
+            }
+        });
+
+     } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+     }
+}
+
 
