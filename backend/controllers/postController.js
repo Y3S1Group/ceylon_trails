@@ -200,3 +200,42 @@ export const updatePost = async (req, res) => {
         });
     }
 }
+
+export const deletePost = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { postId } = req.body;
+
+        const post = await Posts.findById(postId);
+
+        if (!post) {
+            return res.status(404).json({
+                success: false,
+                message: 'Post not found!' 
+            });
+        }
+
+        if (userId && post.userId.toString() !== userId) {
+            return res.status(403).json({
+                success:false,
+                message: 'You can delete only your own posts'
+            });
+        }
+
+        await Posts.findByIdAndDelete(postId);
+
+        console.log('Post deleted successfully!');
+
+        res.status(200).json({
+            success: true,
+            message: 'Post deleted successfully'
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error when deleting post',
+            error: error.message
+        });
+    }
+}
