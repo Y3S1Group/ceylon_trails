@@ -9,5 +9,7 @@ router.get('/feed', getAllPosts);
 router.put('/:postId', updatePost);
 router.delete('/:postId', deletePost);
 
+export default router;
+
 /* this should be added to user routes
 router.get('/:userId/posts', getUserPosts) */
