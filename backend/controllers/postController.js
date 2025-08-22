@@ -144,4 +144,59 @@ export const getAllPosts = async (req, res) => {
      }
 }
 
+export const updatePost = async (req, res) => {
+    try {
+        const { postId } = req.params;
+        const { caption, location, userId, imageUrls, tags } = req.body;
 
+        const post = await Posts.findById(postId);
+
+        if (!post) {
+            return res.status(404).json({
+                success: false,
+                message: 'Post not found'
+            });
+        }
+
+        if (userId && post.userId.toString() !== userId) {
+            return res.status(403).json({
+                success: false,
+                message: 'You can only edit your own posts'
+            });
+        }
+
+        if (!caption || !location) {
+            return res.status(400).json({
+                success: false,
+                message: 'Caption and location are required'
+            });
+        }
+
+        const updateData = {
+            caption, location, updatedAt:new Date()
+        };
+
+        if (imageUrls) updateData.imageUrls = imageUrls;
+        if (tags) updateData.tags = tags;
+
+        const updatedPost = await Posts.findByIdAndUpdate(
+            postId,
+            updateData,
+            { new: true, runValidators: true }
+        ).populate('userId', 'username email');
+
+        console.log('Post updated successfully');
+
+        res.status(200).json({
+            success: true,
+            message: 'Post updated successfully',
+            data: updatedPost
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
+    }
+}
