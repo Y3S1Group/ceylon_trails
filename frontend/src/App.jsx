@@ -1,15 +1,37 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { BrowserRouter, Route, Router, Routes } from 'react-router-dom'
 import './App.css'
+import Explore from './pages/Explore'
+import Feed from './pages/Feed'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [searchValue, setSearchValue] = useState('');
+  const [showSearchInNav, setShowSearchInNav] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const heroHeight = window.innerHeight;
+      const scrollPosition = window.scrollY;
+      
+      const shouldShow = scrollPosition > heroHeight - 100;
+      setShowSearchInNav(shouldShow);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <>
-      <h1 class="text-3xl font-bold absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-        Hello world!
-      </h1>
-    </>
+    <BrowserRouter>
+    <Routes>
+      <Route path='/' element={
+                        <Explore
+                          searchValue={searchValue}
+                          setSearchValue={setSearchValue}
+                          showSearchInNav={showSearchInNav}/>}/>
+      <Route path='/feed' element={<Feed/>}/>
+    </Routes>
+    </BrowserRouter>
   )
 }
 
