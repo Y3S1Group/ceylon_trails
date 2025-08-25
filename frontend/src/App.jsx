@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Route, Router, Routes } from 'react-router-dom'
 import './App.css'
-import PostEditDelete from './pages/PostEditDelete'
+// import PostEditDelete from './pages/PostEditDelete'
 import CeylonTrailsPosts from './pages/CeylonTrailsPosts'
 import Explore from './pages/Explore'
 import Feed from './pages/Feed'
@@ -31,7 +31,7 @@ function App() {
                           searchValue={searchValue}
                           setSearchValue={setSearchValue}
                           showSearchInNav={showSearchInNav}/>}/>
-      <Route path='/edit' element={<PostEditDelete/>}/>
+      {/* <Route path='/edit' element={<PostEditDelete/>}/> */}
       <Route path='/feed' element={<Feed/>}/>
     </Routes>
     </BrowserRouter>
