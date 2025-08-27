@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import 'dotenv/config';
 import userModel from '../models/userModel.js';
 import { text } from 'express';
 import transporter from '../config/nodemailer.js';
@@ -73,7 +74,7 @@ export const login = async (req, res) => {
 
         const token = jwt.sign({id: user._id}, process.env.JWT_SECRET, {expiresIn: '7d'});
 
-        res.cookie('token', token, {httpOnlt: true, 
+        res.cookie('token', token, {httpOnly: true, 
                                     secure: process.env.NODE_ENV === 'production', 
                                     sameSite: process.env.NODE_ENV === 'production' ? 
                                     'none' : 'strict',
@@ -90,7 +91,7 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
     try {
-        res.clearCookie('token',    {httpOnlt: true, 
+        res.clearCookie('token',    {httpOnly: true, 
                                     secure: process.env.NODE_ENV === 'production', 
                                     sameSite: process.env.NODE_ENV === 'production' ? 
                                     'none' : 'strict',
@@ -177,3 +178,29 @@ export const verifyEmail = async (req, res) => {
         return res.json({success: false, message: error.message});
     }
 }
+
+export const getCurrentUser = async (req, res) => {
+    try {
+        const userId = req.userId; // From userAuth middleware
+        
+        const user = await userModel.findById(userId).select('-password -verifyOtp -verifyOtpExpires');
+        
+        if (!user) {
+            return res.json({ success: false, message: 'User not found' });
+        }
+
+        return res.json({ 
+            success: true, 
+            data: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                username: user.username || user.name, // fallback to name if no username
+                isVerified: user.isVerified
+            }
+        });
+
+    } catch (error) {
+        return res.json({ success: false, message: error.message });
+    }
+};
