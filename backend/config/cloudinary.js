@@ -57,7 +57,7 @@ export const deleteFromCloudinary = (publicId) => {
     });
 };
 
-export const deleteMulitipleFromCloudinary = (publicIds) => {
+export const deleteMultipleFromCloudinary = (publicIds) => {
     return new Promise((resolve, reject) => {
         cloudinary.api.delete_resources(publicIds, (error, result) => {
             if (error) {
@@ -90,5 +90,72 @@ export const validateCloudinaryConfig = () => {
 
     return true;
 };
+
+export const validateCloudinaryOnStartup = () => {
+    try {
+        validateCloudinaryConfig();
+        console.log('Cloudinary configuration validated');
+        return true;
+    } catch (error) {
+        console.error('Cloudinary configuration error:', error.message);
+        return false;
+    }
+};
+
+export const cloudinaryTestHandler = async (req, res) => {
+    try {
+        validateCloudinaryConfig();
+ 
+        res.json({
+            success: true,
+            message: 'Cloudinary configuration is valid',
+            config: {
+                cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? 'Set' : 'Missing',
+                api_key: process.env.CLOUDINARY_API_KEY ? 'Set' : 'Missing',
+                api_secret: process.env.CLOUDINARY_API_SECRET ? 'Set' : 'Missing'
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Cloudinary configuration error',
+            error: error.message
+        });
+    }
+};
+
+export const cloudinaryErrorHandler = (err, req, res, next) => {
+    if (err.message.includes('Cloudinary') || err.message.includes('cloudinary')) {
+        return res.status(500).json({
+            success: false,
+            message: 'Image upload service error',
+            error: err.message 
+        });
+    }
+ 
+    if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+            success: false,
+            message: 'File size too large (max 5MB per file)'
+        });
+    }
+ 
+    if (err.code === 'LIMIT_FILE_COUNT') {
+        return res.status(400).json({
+            success: false,
+            message: 'Too many files (max 5 files per post)'
+        });
+    }
+ 
+    if (err.message.includes('multipart') || err.message.includes('boundary')) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid file upload format'
+        });
+    }
+ 
+    next(err);
+};
+
 
 export default cloudinary;
