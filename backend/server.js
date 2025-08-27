@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import connectDB from "./config/database.js";
 import postRoutes from "./routes/postRoutes.js"
+import authRouter from './routes/authRoutes.js';
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.get('/', (req, res) => {
     res.send('Hello, from Server')
 })
 app.get('/api/posts', postRoutes);
+app.use('/api/auth', authRouter);
 
 
 app.use((err, req, res, next) => {
