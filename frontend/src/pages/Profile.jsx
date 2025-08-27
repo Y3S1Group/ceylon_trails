@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, MapPin, Heart, MessageCircle, Share2, Edit, Trash2, X, Save, Camera, ChevronLeft, ChevronRight, Grid, List, MoreHorizontal, Settings, ExternalLink } from 'lucide-react';
-//import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../hooks/useAuth';
 import ImageViewer from '../components/ImageViewer';
 
 const Profile = () => {

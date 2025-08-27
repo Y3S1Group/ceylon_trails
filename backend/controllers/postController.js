@@ -1,4 +1,4 @@
-import Posts from '../models/posts.js';
+import Posts from '../models/Posts.js';
 import { 
     uploadMultipleToCloudinary, 
     deleteMultipleFromCloudinary,

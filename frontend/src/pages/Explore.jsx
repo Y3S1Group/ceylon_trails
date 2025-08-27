@@ -5,8 +5,8 @@ import Hero from '../components/Hero';
 import Footer from '../components/Footer';
 import TrailPost from '../components/TrailPost';
 import CreatePost from '../components/CreatePost';
-//import { useAuth } from '../hooks/useAuth';
-// fimport { motion } from 'framer-motion';
+import { useAuth } from '../hooks/useAuth';
+import { motion } from 'framer-motion';
 
 const Explore = ({ searchValue, setSearchValue, showSearchInNav }) => {
   const [scrollY, setScrollY] = useState(0);

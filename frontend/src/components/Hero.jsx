@@ -337,7 +337,7 @@ const Hero = ({ searchValue, setSearchValue, showSearchInNav }) => {
 
             {/* Scroll Indicator with Bounce */}
             <motion.div 
-            className="absolute md:flex hidden bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center"
+            className="absolute md:flex bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center"
             initial={{ opacity: 0 }}
             animate={{ 
                 y: [0, -10, 0],
