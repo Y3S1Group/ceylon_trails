@@ -1,5 +1,6 @@
-import { Award, Bookmark, Camera, Clock, Compass, Heart, MapPin, MessageCircle, Mountain, Share2, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Award, Bookmark, Camera, Clock, Compass, Heart, MapPin, MessageCircle, Mountain, Share2, Star, ChevronLeft, ChevronRight, Plus, Map } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
+import ImageViewer from './ImageViewer';
 
 const TrailPost = () => {
     const [liked, setLiked] = useState({});
@@ -7,122 +8,112 @@ const TrailPost = () => {
     const [showComments, setShowComments] = useState({});
     const [comment, setComment] = useState('');
     const [modalOpen, setModalOpen] = useState(false);
-    const [currentImage, setCurrentImage] = useState(null);
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    const [currentTrailImages, setCurrentTrailImages] = useState([]);
+    const [currentPostImages, setCurrentPostImages] = useState([]);
     const [expandedCaptions, setExpandedCaptions] = useState({});
     const [isCaptionLong, setIsCaptionLong] = useState({});
 
+    // State for backend posts functionality
+    const [posts, setPosts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    
+    const [ImageViewerOpen, setImageViewerOpen] = useState(false);
+    const [currentImages, setCurrentImages] = useState([]);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
     const captionRefs = useRef({});
 
-    const trailImages = {
-        1: [
-            "https://picsum.photos/id/237/400/300",
-            "https://picsum.photos/id/238/400/300",
-            "https://picsum.photos/id/239/400/300",
-            "https://picsum.photos/id/240/400/300",
-            "https://picsum.photos/id/241/400/300"
-        ],
-        2: [
-            "https://picsum.photos/id/242/400/300",
-            "https://picsum.photos/id/243/400/300",
-            "https://picsum.photos/id/244/400/300",
-            "https://picsum.photos/id/240/400/300",
-            "https://picsum.photos/id/241/400/300"
-        ]
+    // Load posts from backend
+    useEffect(() => {
+        const loadPosts = async () => {
+            try {
+                setLoading(true);
+                const response = await fetch('/api/posts/feed');
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    setPosts(data.data);
+                }
+            } catch (error) {
+                console.error('Error loading posts:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadPosts();
+    }, []);
+
+    // User display logic
+    const getUserDisplayInfo = (userObj) => {
+        if (userObj && typeof userObj === 'object' && userObj.username) {
+            return {
+                name: userObj.username,
+                avatar: userObj.username.charAt(0).toUpperCase()
+            };
+        }
+    
+        return {
+            name: 'Explorer',
+            avatar: 'E'
+        };
     };
 
-    const openModal = (img, trailId, index) => {
-        setCurrentImage(img);
-        setCurrentTrailImages(trailImages[trailId]);
+    const openImageViewer = (img, postImages, index) => {
+        setCurrentImages(img);
         setCurrentImageIndex(index);
-        setModalOpen(true);
+        setImageViewerOpen(true);
     };
 
-    const closeModal = () => {
-        setModalOpen(false);
-        setCurrentImage(null);
-        setCurrentTrailImages([]);
+    const closeImageViewer = () => {
+        setImageViewerOpen(false);
+        setCurrentImages([]);
         setCurrentImageIndex(0);
     };
 
     const nextImage = () => {
-        const nextIndex = (currentImageIndex + 1) % currentTrailImages.length;
-        setCurrentImageIndex(nextIndex);
-        setCurrentImage(currentTrailImages[nextIndex]);
+        setCurrentImageIndex((prev) => (prev + 1) % currentPostImages.length);
     };
 
     const prevImage = () => {
-        const prevIndex = (currentImageIndex - 1 + currentTrailImages.length) % currentTrailImages.length;
-        setCurrentImageIndex(prevIndex);
-        setCurrentImage(currentTrailImages[prevIndex]);
+        setCurrentImageIndex((prev) => (prev - 1 + currentImages.length) % currentImages.length);
     };
 
-    const toggleCaption = (trailId) => {
-        setExpandedCaptions(prev => ({ ...prev, [trailId]: !prev[trailId] }));
+    const toggleCaption = (postId) => {
+        setExpandedCaptions(prev => ({ ...prev, [postId]: !prev[postId] }));
     };
 
-    const trails = [
-        {
-            id: 1,
-            author: "Amara Perera",
-            time: "4 days ago",
-            avatar: "AP",
-            verified: true,
-            title: "Hidden gems of Ella! The view from Little Adam's Peak is absolutely breathtaking. The moderate hike rewards you with panoramic views and the iconic Nine Arch Bridge nearby makes this a perfect day adventure. The trail is well-marked and suitable for most fitness levels, though it can get quite busy during peak tourist season. Early morning visits are recommended for the best lighting and fewer crowds.",
-            location: "Little Adam's Peak, Ella",
-            likes: 127,
-            comments: 23,
-            shares: 8,
-            rating: 4.8,
-            tags: ["#hiking", "#ella", "#srilanka", "#nature", "#photography"]
-        },
-        {
-            id: 2,
-            author: "Rohan Silva",
-            time: "1 week ago",
-            avatar: "RS",
-            verified: false,
-            title: "Sunrise at Horton Plains was magical! The World's End cliff offers stunning views over the valley. Early morning start is worth it to avoid crowds and witness the incredible sunrise painting the landscape. The mist was incredible and created such a mystical atmosphere. Don't forget to bring warm clothes as it gets quite cold in the early hours!",
-            location: "Horton Plains National Park",
-            likes: 89,
-            comments: 15,
-            shares: 12,
-            rating: 4.6,
-            tags: ["#sunrise", "#hortonplains", "#worldsend", "#nationalpark"]
-        }
-    ];
-
-    const toggleLike = (trailId) => {
-        setLiked(prev => ({ ...prev, [trailId]: !prev[trailId] }));
+    const toggleLike = (postId) => {
+        setLiked(prev => ({ ...prev, [postId]: !prev[postId] }));
     };
 
-    const toggleBookmark = (trailId) => {
-        setBookmarked(prev => ({ ...prev, [trailId]: !prev[trailId] }));
+    const toggleBookmark = (postId) => {
+        setBookmarked(prev => ({ ...prev, [postId]: !prev[postId] }));
     };
 
-    const toggleComments = (trailId) => {
-        setShowComments(prev => ({ ...prev, [trailId]: !prev[trailId] }));
+    const toggleComments = (postId) => {
+        setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }));
     };
 
     useEffect(() => {
         const checkCaptionHeight = () => {
             const updatedIsCaptionLong = {};
-            trails.forEach(trail => {
-                const element = captionRefs.current[trail.id];
+            posts.forEach(post => {
+                const element = captionRefs.current[post._id];
                 if (element) {
                     const lineHeight = parseFloat(getComputedStyle(element).lineHeight);
                     const maxHeight = lineHeight * 2;
-                    updatedIsCaptionLong[trail.id] = element.scrollHeight > maxHeight;
+                    updatedIsCaptionLong[post._id] = element.scrollHeight > maxHeight;
                 }
             });
             setIsCaptionLong(updatedIsCaptionLong);
         };
 
-        checkCaptionHeight();
-        window.addEventListener('resize', checkCaptionHeight);
-        return () => window.removeEventListener('resize', checkCaptionHeight);
-    }, []);
+        if (posts.length > 0) {
+            checkCaptionHeight();
+            window.addEventListener('resize', checkCaptionHeight);
+            return () => window.removeEventListener('resize', checkCaptionHeight);
+        }
+    }, [posts]);
 
     return (
         <div className="max-w-5xl mx-auto px-6 py-20">
@@ -135,206 +126,218 @@ const TrailPost = () => {
                 }
             `}</style>
 
-            {trails.map((trail) => (
-                <div key={trail.id} className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8 hover:shadow-xl transition-all duration-300">
-                    <div className="p-6 border-b border-gray-100">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                                <div className="relative">
-                                    <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center text-white font-semibold">
-                                        {trail.avatar}
+            <div className="text-center mb-16">
+                <h2 className="text-4xl font-bold text-gray-900 mb-4">Recent Adventures</h2>
+                <p className="text-xl text-gray-600">Stories from our community</p>
+            </div>
+
+            {loading && (
+                <div className="flex justify-center items-center py-20">
+                    <div className="w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            )}
+
+            {!loading && posts.length === 0 && (
+                <div className="text-center py-20">
+                    <Map className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No posts yet</h3>
+                    <p className="text-gray-600">Be the first to share your adventure!</p>
+                </div>
+            )}
+
+            {!loading && posts.map((post) => {
+                const userInfo = getUserDisplayInfo(post.userId);
+                const postImages = post.imageUrls || [];
+                
+                return (
+                    <div key={post._id} className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8 hover:shadow-xl transition-all duration-300">
+                        <div className="p-6 border-b border-gray-100">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-4">
+                                    <div className="relative">
+                                        <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center text-white font-semibold">
+                                            {userInfo.avatar}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center space-x-2">
+                                            <h3 className="font-semibold text-gray-900">{userInfo.name}</h3>
+                                            <span className="text-blue-600 text-xs">Verified</span>
+                                        </div>
+                                        <p className="text-gray-500 text-sm flex items-center">
+                                            <Clock className="w-4 h-4 mr-1" />
+                                            {new Date(post.createdAt).toLocaleDateString()} • <MapPin className="w-4 h-4 ml-2 mr-1" /> {post.location}
+                                        </p>
                                     </div>
                                 </div>
-                                <div>
-                                    <div className="flex items-center space-x-2">
-                                        <h3 className="font-semibold text-gray-900">{trail.author}</h3>
-                                        {trail.verified && <span className="text-blue-600 text-xs">Verified</span>}
+                            </div>
+                        </div>
+
+                        <div className="p-6">
+                            <div className="relative">
+                                <p
+                                    ref={(el) => (captionRefs.current[post._id] = el)}
+                                    className={`text-gray-700 leading-relaxed ${
+                                        expandedCaptions[post._id] ? '' : 'line-clamp-2'
+                                    }`}
+                                >
+                                    {post.caption}
+                                </p>
+                                {isCaptionLong[post._id] && !expandedCaptions[post._id] && (
+                                    <button
+                                        onClick={() => toggleCaption(post._id)}
+                                        className="text-teal-600 hover:text-teal-800 text-sm font-medium"
+                                    >
+                                        See more...
+                                    </button>
+                                )}
+                                {expandedCaptions[post._id] && (
+                                    <button
+                                        onClick={() => toggleCaption(post._id)}
+                                        className="text-teal-600 hover:text-teal-800 text-sm font-medium"
+                                    >
+                                        See less
+                                    </button>
+                                )}
+                            </div>
+                            {post.tags && post.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mb-0 mt-4">
+                                    {post.tags.map((tag, index) => (
+                                        <span key={index} className="bg-teal-800/80 text-white px-3 py-1 rounded-full text-sm font-medium border border-blue-200">
+                                            #{tag}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Post Images - Using TrailPost's original layout style */}
+                        {postImages.length > 0 && (
+                            <div className="grid gap-1 px-6">
+                                {postImages.length >= 2 && (
+                                    <div className="grid grid-cols-2 gap-1">
+                                        {postImages.slice(0, 2).map((img, index) => (
+                                            <img
+                                                key={index}
+                                                src={img}
+                                                alt={`Image ${index + 1}`}
+                                                className="w-full h-80 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
+                                                onClick={() => openModal(img, postImages, index)}
+                                            />
+                                        ))}
                                     </div>
-                                    <p className="text-gray-500 text-sm flex items-center">
-                                        <Clock className="w-4 h-4 mr-1" />
-                                        {trail.time} • <MapPin className="w-4 h-4 ml-2 mr-1" /> {trail.location}
-                                    </p>
+                                )}
+                                {postImages.length === 1 && (
+                                    <div className="grid grid-cols-1 gap-1">
+                                        <img
+                                            src={postImages[0]}
+                                            alt="Post image"
+                                            className="w-full h-80 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
+                                            onClick={() => openModal(postImages[0], postImages, 0)}
+                                        />
+                                    </div>
+                                )}
+                                {postImages.length > 2 && (
+                                    <div className="grid grid-cols-3 gap-1">
+                                        {postImages.slice(2, 5).map((img, index) => (
+                                            <img
+                                                key={index}
+                                                src={img}
+                                                alt={`Image ${index + 3}`}
+                                                className="w-full h-60 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
+                                                onClick={() => openModal(img, postImages, index + 2)}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="p-6 border-t border-gray-100">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-6">
+                                    <button
+                                        onClick={() => toggleLike(post._id)}
+                                        className={`flex items-center space-x-2 px-3 py-1 rounded-full transition-all ${
+                                            liked[post._id]
+                                                ? 'text-red-500 bg-red-50'
+                                                : 'text-gray-600 hover:text-red-500 hover:bg-red-50'
+                                        }`}
+                                    >
+                                        <Heart className={`w-5 h-5 ${liked[post._id] ? 'fill-current' : ''}`} />
+                                        <span className="text-sm font-medium">
+                                            {liked[post._id] ? 'Liked' : 'Like'} ({(post.likes?.length || 0) + (liked[post._id] ? 1 : 0)})
+                                        </span>
+                                    </button>
+                                    <button
+                                        onClick={() => toggleComments(post._id)}
+                                        className="flex items-center space-x-2 px-3 py-1 rounded-full text-gray-600 hover:text-blue-500 hover:bg-blue-50 transition-all"
+                                    >
+                                        <MessageCircle className="w-5 h-5" />
+                                        <span className="text-sm font-medium">Comment ({post.comments?.length || 0})</span>
+                                    </button>
+                                    <button
+                                        onClick={() => toggleBookmark(post._id)}
+                                        className={`flex items-center space-x-2 px-3 py-1 rounded-full transition-all ${
+                                            bookmarked[post._id]
+                                                ? 'text-yellow-500 bg-yellow-50'
+                                                : 'text-gray-600 hover:text-yellow-500 hover:bg-yellow-50'
+                                        }`}
+                                    >
+                                        <Bookmark className={`w-5 h-5 ${bookmarked[post._id] ? 'fill-current' : ''}`} />
+                                        <span className="text-sm font-medium">Save</span>
+                                    </button>
+                                </div>
+                                <div className="flex items-center space-x-4">
+                                    <div className="flex items-center space-x-2 bg-amber-50 px-3 py-1 rounded-full">
+                                        <Star className="w-4 h-4 fill-current text-amber-500" />
+                                        <span className="font-semibold text-gray-900 text-sm">4.8</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="p-6">
-                        <div className="relative">
-                            <p
-                                ref={(el) => (captionRefs.current[trail.id] = el)}
-                                className={`text-gray-700 leading-relaxed ${
-                                    expandedCaptions[trail.id] ? '' : 'line-clamp-2'
-                                }`}
-                            >
-                                {trail.title}
-                            </p>
-                            {isCaptionLong[trail.id] && !expandedCaptions[trail.id] && (
-                                <button
-                                    onClick={() => toggleCaption(trail.id)}
-                                    className="text-teal-600 hover:text-teal-800 text-sm font-medium"
-                                >
-                                    See more...
-                                </button>
-                            )}
-                            {expandedCaptions[trail.id] && (
-                                <button
-                                    onClick={() => toggleCaption(trail.id)}
-                                    className="text-teal-600 hover:text-teal-800 text-sm font-medium"
-                                >
-                                    See less
-                                </button>
-                            )}
-                        </div>
-                        <div className="flex flex-wrap gap-2 mb-0 mt-4">
-                            {trail.tags.map((tag, index) => (
-                                <span key={index} className="bg-teal-800/80 text-white px-3 py-1 rounded-full text-sm font-medium border border-blue-200">
-                                    {tag}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="grid gap-1 px-6">
-                        <div className="grid grid-cols-2 gap-1">
-                            {trailImages[trail.id].slice(0, 2).map((img, index) => (
-                                <img
-                                    key={index}
-                                    src={img}
-                                    alt={`Image ${index + 1}`}
-                                    className="w-full h-80 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
-                                    onClick={() => openModal(img, trail.id, index)}
-                                />
-                            ))}
-                        </div>
-                        <div className="grid grid-cols-3 gap-1">
-                            {trailImages[trail.id].slice(2, 5).map((img, index) => (
-                                <img
-                                    key={index}
-                                    src={img}
-                                    alt={`Image ${index + 3}`}
-                                    className="w-full h-60 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
-                                    onClick={() => openModal(img, trail.id, index + 2)}
-                                />
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="p-6 border-t border-gray-100">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-6">
-                                <button
-                                    onClick={() => toggleLike(trail.id)}
-                                    className={`flex items-center space-x-2 px-3 py-1 rounded-full transition-all ${
-                                        liked[trail.id]
-                                            ? 'text-red-500 bg-red-50'
-                                            : 'text-gray-600 hover:text-red-500 hover:bg-red-50'
-                                    }`}
-                                >
-                                    <Heart className={`w-5 h-5 ${liked[trail.id] ? 'fill-current' : ''}`} />
-                                    <span className="text-sm font-medium">
-                                        {liked[trail.id] ? 'Liked' : 'Like'} ({trail.likes + (liked[trail.id] ? 1 : 0)})
-                                    </span>
-                                </button>
-                                <button
-                                    onClick={() => toggleComments(trail.id)}
-                                    className="flex items-center space-x-2 px-3 py-1 rounded-full text-gray-600 hover:text-blue-500 hover:bg-blue-50 transition-all"
-                                >
-                                    <MessageCircle className="w-5 h-5" />
-                                    <span className="text-sm font-medium">Comment ({trail.comments})</span>
-                                </button>
-                            </div>
-                            <div className="flex items-center space-x-4">
-                                <div className="flex items-center space-x-2 bg-amber-50 px-3 py-1 rounded-full">
-                                    <Star className="w-4 h-4 fill-current text-amber-500" />
-                                    <span className="font-semibold text-gray-900 text-sm">{trail.rating}</span>
-                                </div>
-                                <button
-                                    onClick={() => toggleBookmark(trail.id)}
-                                    className={`p-2 rounded-full transition-all ${
-                                        bookmarked[trail.id]
-                                            ? 'text-teal-600'
-                                            : 'text-gray-600 hover:text-teal-600'
-                                    }`}
-                                    title={bookmarked[trail.id] ? 'Remove bookmark' : 'Save post'}
-                                >
-                                    <Bookmark className={`w-5 h-5 ${bookmarked[trail.id] ? 'fill-current' : ''}`} />
-                                </button>
-                            </div>
-                        </div>
-
-                        {showComments[trail.id] && (
-                            <div className="mt-6 pt-4 border-t border-gray-100">
-                                <div className="space-y-4 mb-4">
-                                    <div className="flex space-x-3">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-green-600 to-green-700 rounded-lg flex items-center justify-center text-white font-semibold text-xs">
-                                            SK
+                        {/* Comments Section */}
+                        {showComments[post._id] && (
+                            <div className="px-6 pb-6 border-t border-gray-100">
+                                <div className="space-y-4 mt-4">
+                                    <div className="flex items-start space-x-3">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                                            JS
                                         </div>
                                         <div className="flex-1">
-                                            <div className="bg-gray-50 rounded-lg px-4 py-3">
-                                                <div className="flex items-center space-x-2 mb-1">
-                                                    <p className="font-medium text-gray-900 text-sm">Sahan Kumara</p>
-                                                    <span className="text-xs text-gray-500">2h</span>
-                                                </div>
-                                                <p className="text-gray-700 text-sm">Amazing views! How crowded was it during your visit?</p>
-                                            </div>
+                                            <p className="text-sm"><span className="font-semibold">John Silva</span> Amazing photos! How long did the hike take?</p>
+                                            <p className="text-xs text-gray-500 mt-1">2 days ago</p>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex space-x-3">
-                                    <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center text-white font-semibold text-xs">
-                                        YU
+                                <div className="flex items-center space-x-3 mt-4">
+                                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                                        {userInfo.avatar}
                                     </div>
-                                    <div className="flex-1 flex space-x-2">
-                                        <input
-                                            type="text"
-                                            value={comment}
-                                            onChange={(e) => setComment(e.target.value)}
-                                            placeholder="Add a comment..."
-                                            className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors text-sm"
-                                        />
-                                        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors">
-                                            Post
-                                        </button>
-                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Write a comment..."
+                                        value={comment}
+                                        onChange={(e) => setComment(e.target.value)}
+                                        className="flex-1 px-4 py-2 bg-gray-50 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
                                 </div>
                             </div>
                         )}
                     </div>
-                </div>
-            ))}
+                );
+            })}
 
-            {modalOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 transition-all duration-300">
-                    <div className="relative max-w-5xl w-full h-[90vh] flex items-center justify-center bg-white/20 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
-                        <button
-                            onClick={closeModal}
-                            className="absolute top-4 right-4 text-gray-200 hover:text-white transition-colors z-10"
-                        >
-                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                        <button
-                            onClick={prevImage}
-                            className="absolute left-4 text-gray-200 hover:text-white transition-colors z-10"
-                        >
-                            <ChevronLeft className="w-12 h-12" />
-                        </button>
-                        <img
-                            src={currentImage}
-                            alt="Full-screen trail"
-                            className="w-full h-full object-contain shadow-2xl pt-0.5 pb-0.5"
-                        />
-                        <button
-                            onClick={nextImage}
-                            className="absolute right-4 text-gray-200 hover:text-white transition-colors z-10"
-                        >
-                            <ChevronRight className="w-12 h-12" />
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* Modal for image viewing */}
+            <ImageViewer
+                isOpen={ImageViewerOpen}
+                images={currentImages}
+                currentIndex={currentImageIndex}
+                onClose={closeImageViewer}
+                onNext={nextImage}
+                onPrev={prevImage}
+            />
         </div>
     );
 };

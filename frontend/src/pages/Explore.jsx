@@ -4,12 +4,18 @@ import { Search, Plus, Heart, MessageCircle, Share2, MapPin, Clock, Users, Star,
 import Hero from '../components/Hero';
 import Footer from '../components/Footer';
 import TrailPost from '../components/TrailPost';
+import CreatePost from '../components/CreatePost';
+//import { useAuth } from '../hooks/useAuth';
 // fimport { motion } from 'framer-motion';
 
-const CeylonTrailsUI = ({ searchValue, setSearchValue, showSearchInNav }) => {
+const Explore = ({ searchValue, setSearchValue, showSearchInNav }) => {
   const [scrollY, setScrollY] = useState(0);
   const [isVisible, setIsVisible] = useState({});
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showCreatePost, setShowCreatePost] = useState(false);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const { isAuthenticated, loading: authLoading } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,6 +32,44 @@ const CeylonTrailsUI = ({ searchValue, setSearchValue, showSearchInNav }) => {
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    const loadPosts = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/posts/feed');
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          setPosts(data.data);
+        }
+      } catch (error) {
+        console.error('Error loading posts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPosts();
+  }, []);
+
+  const handlePostCreated = (newPost) => {
+    setPosts(prev => [newPost, ...prev].slice(0, 5));
+  };
+
+  const getUserDisplayInfo = (userObj) => {
+    if (userObj && typeof userObj === 'object' && userObj.username) {
+      return {
+        name: userObj.username,
+        avatar: userObj.username.charAt(0).toUpperCase()
+      };
+    }
+  
+    return {
+      name: 'Explorer',
+      avatar: 'E'
+    };
+  };
 
   const stats = [
     { icon: Mountain, number: "500+", label: "Trails Mapped", color: "text-blue-600" },
@@ -98,20 +142,25 @@ const CeylonTrailsUI = ({ searchValue, setSearchValue, showSearchInNav }) => {
         </div>
       </div>
       <TrailPost />
-      <button
+
+      {!authLoading && isAuthenticated && (
+        <button
         className="group fixed bottom-14 right-18 w-14 h-14 bg-teal-600/40 backdrop-blur-xs border border-teal-600 hover:border-teal-800 hover:bg-teal-600/90 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 z-40"
         onClick={() => setIsModalOpen(true)}
         aria-label="Add new post"
       >
         <Plus className="w-6 h-6 text-teal-600 group-hover:text-white" />
       </button>
-      {/* <CreatePostForm
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      /> */}
+      )}
+
+      <CreatePost
+        isOpen={showCreatePost}
+        onClose={() => setShowCreatePost(false)}
+        onPostCreated={handlePostCreated}
+      />
       <Footer />
     </div>
   );
 }
 
-export default CeylonTrailsUI;
+export default Explore;
