@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import connectDB from "./config/database.js";
 import postRoutes from "./routes/postRoutes.js"
+import authRouter from './routes/authRoutes.js';
 import { cloudinaryErrorHandler, cloudinaryTestHandler, validateCloudinaryOnStartup } from './config/cloudinary.js';
 import { handleFileUpload } from './middleware/fileUpload.js';
 
@@ -35,6 +36,8 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => {
     res.send('Hello, from Server')
 })
+
+app.use('/api/auth', authRouter);
 app.get('api/test/cloudinary', cloudinaryTestHandler);
 app.use('/api/posts', (req, res, next) => {
     if (req.method === 'POST' || req.method === 'PUT') {
