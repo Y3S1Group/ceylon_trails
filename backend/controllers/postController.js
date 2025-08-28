@@ -2,17 +2,8 @@ import Posts from '../models/Posts.js';
 import { 
     uploadMultipleToCloudinary, 
     deleteMultipleFromCloudinary,
-    extractPublicId,
-    validateCloudinaryConfig 
+    extractPublicId
 } from '../config/cloudinary.js';
-
-// Validate Cloudinary config on startup
-try {
-    validateCloudinaryConfig();
-    console.log('Cloudinary configuration validated successfully');
-} catch (error) {
-    console.error('Cloudinary configuration error:', error.message);
-}
 
 export const createPost = async (req, res) => {
     try {
@@ -57,7 +48,6 @@ export const createPost = async (req, res) => {
             });
         }
 
-        // Upload images to Cloudinary
         const uploadResults = await uploadMultipleToCloudinary(req.files);
         const imageUrls = uploadResults.map(result => result.url);
         const publicIds = uploadResults.map(result => result.publicId);
@@ -75,8 +65,6 @@ export const createPost = async (req, res) => {
         const populatedPost = await Posts.findById(savedPost._id)
             .populate('userId', 'username email')
             .populate('comments.userId', 'username email');
-
-        console.log('Post created successfully');
 
         res.status(201).json({
             success: true,
@@ -124,14 +112,12 @@ export const updatePost = async (req, res) => {
         let finalImageUrls = [];
         let finalPublicIds = [];
 
-        // Handle existing images
         if (existingImages) {
             try {
                 const existingImagesArray = typeof existingImages === 'string' ?
                     JSON.parse(existingImages) : existingImages;
                 finalImageUrls = Array.isArray(existingImagesArray) ? existingImagesArray : [];
                 
-                // Get corresponding public IDs for existing images
                 if (post.cloudinaryPublicIds && post.imageUrls) {
                     finalPublicIds = finalImageUrls.map(url => {
                         const index = post.imageUrls.indexOf(url);
@@ -144,7 +130,6 @@ export const updatePost = async (req, res) => {
             }
         }
 
-        // Upload new images if any
         if (req.files && req.files.length > 0) {
             const uploadResults = await uploadMultipleToCloudinary(req.files);
             const newImageUrls = uploadResults.map(result => result.url);
@@ -187,7 +172,6 @@ export const updatePost = async (req, res) => {
             });
         }
 
-        // Delete removed images from Cloudinary
         if (post.cloudinaryPublicIds && post.cloudinaryPublicIds.length > 0) {
             const removedPublicIds = post.cloudinaryPublicIds.filter(
                 id => !finalPublicIds.includes(id)
@@ -217,7 +201,6 @@ export const updatePost = async (req, res) => {
             { new: true, runValidators: true }
         ).populate('userId', 'username email');
 
-        console.log('Post updated successfully');
         res.status(200).json({
             success: true,
             message: 'Post updated successfully',
@@ -254,7 +237,6 @@ export const deletePost = async (req, res) => {
             });
         }
 
-        // Delete images from Cloudinary
         if (post.cloudinaryPublicIds && post.cloudinaryPublicIds.length > 0) {
             try {
                 await deleteMultipleFromCloudinary(post.cloudinaryPublicIds);

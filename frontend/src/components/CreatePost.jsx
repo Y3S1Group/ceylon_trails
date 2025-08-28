@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Image, MapPin, Clock, Hash, Send } from 'lucide-react';
+import useAuth from '../hooks/useAuth';
 
 const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
     const { currentUser, isAuthenticated } = useAuth();
@@ -15,6 +16,7 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    if (!isOpen) return null;
 
     const handleImageUpload = (e) => {
         const files = Array.from(e.target.files);
@@ -58,9 +60,8 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
                 throw new Error('Maximum 5 images allowed');
             }
 
-            // Process tags - FIXED VERSION
             const tags = postData.tags.trim() ? 
-                postData.tags.split(/[,]+/)  // Only split on commas, not spaces
+                postData.tags.split(/[,]+/)  
                     .map(tag => tag.trim().replace(/^#/, ''))
                     .filter(tag => tag.length > 0)
                     .slice(0, 10)
@@ -78,7 +79,7 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
                 throw new Error('Maximum 10 tags allowed');
             }
 
-            // Create FormData for single API call
+            
             const formData = new FormData();
             formData.append('userId', currentUser?.id);
             formData.append('caption', postData.content.trim());
@@ -148,18 +149,6 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
             </div>
         );
     }
-
-    if (!isAuthenticated) {
-        return (
-            <div className='fixed inset-0 bg-black/20 backdrop-blur-xs flex items-center justify-center z-50'>
-                <div className='bg-gray-200 rounded-xl p-8'>
-                    <div className='text-center text-red-600'>Please log in to create posts</div>
-                </div>
-            </div>
-        );
-    }
-
-    if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-xs flex items-center justify-center z-50 p-4">
