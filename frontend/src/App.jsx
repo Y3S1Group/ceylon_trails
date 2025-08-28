@@ -5,7 +5,7 @@ import Explore from './pages/Explore'
 import Feed from './pages/Feed'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
-
+import Profile from './pages/Profile'
 
 function App() {
   const [searchValue, setSearchValue] = useState('');
@@ -35,6 +35,7 @@ function App() {
       <Route path='/feed' element={<Feed/>}/>
       <Route path='/login' element={<Login/>}/>
       <Route path='/signup' element={<Signup/>}/>
+      <Route path='/profile' element={<Profile/>}/>
     </Routes>
     </BrowserRouter>
   )

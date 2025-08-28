@@ -38,7 +38,7 @@ app.get('/', (req, res) => {
 })
 
 app.use('/api/auth', authRouter);
-app.get('api/test/cloudinary', cloudinaryTestHandler);
+app.get('/api/test/cloudinary', cloudinaryTestHandler);
 app.use('/api/posts', (req, res, next) => {
     if (req.method === 'POST' || req.method === 'PUT') {
         handleFileUpload(req, res, next);

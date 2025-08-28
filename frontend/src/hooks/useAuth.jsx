@@ -107,3 +107,5 @@ export const useAuth = () => {
         refreshAuth: checkAuthStatus
     };
 };
+
+export default useAuth;
