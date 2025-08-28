@@ -32,7 +32,7 @@ const Profile = () => {
   const fetchUserPosts = async (userId) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/user/user-posts/${userId}`);
+      const response = await fetch(`/api/auth/user-posts/${userId}`);
       const result = await response.json();
       
       if (result.success) {
