@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import connectDB from "./config/database.js";
 import postRoutes from "./routes/postRoutes.js"
 import authRouter from './routes/authRoutes.js';
@@ -26,7 +27,7 @@ app.use (cors({
     origin: process.env.CLIENT_URL || "http://localhost:5173",
     credentials: true,
 }));
-
+app.use(cookieParser());
 app.use((req, res, next) => {
     console.log('Request body before route:',req.body);
     next();

@@ -180,27 +180,28 @@ export const verifyEmail = async (req, res) => {
 }
 
 export const getCurrentUser = async (req, res) => {
-    try {
-        const userId = req.userId; // From userAuth middleware
-        
-        const user = await userModel.findById(userId).select('-password -verifyOtp -verifyOtpExpires');
-        
-        if (!user) {
-            return res.json({ success: false, message: 'User not found' });
-        }
+  try {
+    const userId = req.userId; // From middleware
 
-        return res.json({ 
-            success: true, 
-            data: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                username: user.username || user.name, // fallback to name if no username
-                isVerified: user.isVerified
-            }
-        });
+    const user = await userModel
+      .findById(userId)
+      .select('-password -verifyOtp -verifyOtpExpires');
 
-    } catch (error) {
-        return res.json({ success: false, message: error.message });
-    }
+    if (!user) {
+      return res.json({ loggedIn: false, user: null });
+    }
+
+    return res.json({
+      loggedIn: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        username: user.username || user.name,
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ loggedIn: false, user: null });
+  }
 };

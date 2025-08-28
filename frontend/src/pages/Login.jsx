@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import useAuth from '../hooks/useAuth';
-//import LoginImage from '../assets/login.png';
+import { useAuth } from '../hooks/useAuth';
+import axios from 'axios'; // ✅ added axios
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -14,7 +14,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { login } = useAuth();
+  // ✅ hook provides login function
   const navigate = useNavigate();
 
   const handleInputChange = (e) => {
@@ -25,27 +25,24 @@ const LoginPage = () => {
     }));
   };
 
+  const { login } = useAuth();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    try {
-      const result = await login(formData.email, formData.password);
-      
-      if (result.success) {
-        // Navigate to explore page after successful login
-        navigate('/');
-      } else {
-        setError(result.message || 'Login failed');
-      }
-    } catch (err) {
-      console.error('Error during login:', err);
-      setError('Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
+    const result = await login(formData.email, formData.password);
+
+    if (result.success) {
+      navigate("/"); // redirect to homepage
+    } else {
+      setError(result.message);
     }
+
+    setLoading(false);
   };
+
 
   return (
     <div className="min-h-screen flex">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Image, MapPin, Clock, Hash, Send } from 'lucide-react';
-import useAuth from '../hooks/useAuth';
+import { useAuth } from '../hooks/useAuth';
 
 const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
     const { currentUser, isAuthenticated } = useAuth();
