@@ -3,6 +3,9 @@ import { BrowserRouter, Route, Router, Routes } from 'react-router-dom'
 import './App.css'
 import Explore from './pages/Explore'
 import Feed from './pages/Feed'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
+
 
 function App() {
   const [searchValue, setSearchValue] = useState('');
@@ -30,6 +33,8 @@ function App() {
                           setSearchValue={setSearchValue}
                           showSearchInNav={showSearchInNav}/>}/>
       <Route path='/feed' element={<Feed/>}/>
+      <Route path='/login' element={<Login/>}/>
+      <Route path='/signup' element={<Signup/>}/>
     </Routes>
     </BrowserRouter>
   )
