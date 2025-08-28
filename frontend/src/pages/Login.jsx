@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
-import LoginImage from '../assets/login.png';
+import { useNavigate } from 'react-router-dom';
+import useAuth from '../hooks/useAuth';
+//import LoginImage from '../assets/login.png';
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -9,6 +11,11 @@ const LoginPage = () => {
     password: '',
     rememberMe: false
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -20,57 +27,39 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
 
     try {
-      const response = await fetch("http://localhost:5006/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // show error
-        alert(data.message || "Login failed");
-        return;
+      const result = await login(formData.email, formData.password);
+      
+      if (result.success) {
+        // Navigate to explore page after successful login
+        navigate('/');
+      } else {
+        setError(result.message || 'Login failed');
       }
-
-      // ✅ store token if backend sends it
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
-
-      // Redirect or update UI
-      alert("Login successful!");
-      console.log("User:", data.user); // depends on your backend response
-
     } catch (err) {
-      console.error("Error during login:", err);
-      alert("Something went wrong. Please try again.");
+      console.error('Error during login:', err);
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
-
 
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Image */}
-    <div className="hidden lg:flex lg:w-1/2 p-6">
-    <img
-        src={LoginImage} // correct way
-        alt="Login Illustration"
-        className="w-full h-full object-cover rounded-2xl shadow-lg"
-    />
-    </div>
-
+      <div className="hidden lg:flex lg:w-1/2 p-6">
+        <img
+          src="https://images.unsplash.com/photo-1580803834205-0e64baf9d13d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+          alt="Login Illustration"
+          className="w-full h-full object-cover rounded-2xl shadow-lg"
+        />
+      </div>
 
       {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 ">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-xl p-8">
             {/* Header */}
@@ -79,8 +68,15 @@ const LoginPage = () => {
               <p className="text-gray-600">Enter your credentials to access your account</p>
             </div>
 
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+
             {/* Login Form */}
-            <div className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* Email Field */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -99,6 +95,7 @@ const LoginPage = () => {
                     onChange={handleInputChange}
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                     placeholder="Enter your email"
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -121,11 +118,13 @@ const LoginPage = () => {
                     onChange={handleInputChange}
                     className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                     placeholder="Enter your password"
+                    disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    disabled={loading}
                   >
                     {showPassword ? (
                       <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
@@ -146,6 +145,7 @@ const LoginPage = () => {
                     checked={formData.rememberMe}
                     onChange={handleInputChange}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    disabled={loading}
                   />
                   <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700">
                     Remember me
@@ -158,13 +158,13 @@ const LoginPage = () => {
 
               {/* Submit Button */}
               <button
-                type="button"
-                onClick={handleSubmit}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform hover:scale-105 transition duration-200 font-medium"
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform hover:scale-105 transition duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
-                Sign In
+                {loading ? 'Signing In...' : 'Sign In'}
               </button>
-            </div>
+            </form>
 
             {/* Divider */}
             <div className="mt-8 mb-6">
@@ -183,6 +183,7 @@ const LoginPage = () => {
               <button
                 type="button"
                 className="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition duration-200"
+                disabled={loading}
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -195,6 +196,7 @@ const LoginPage = () => {
               <button
                 type="button"
                 className="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition duration-200"
+                disabled={loading}
               >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
