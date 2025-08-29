@@ -8,7 +8,6 @@ const TrailPost = () => {
     const [showComments, setShowComments] = useState({});
     const [comment, setComment] = useState('');
     const [modalOpen, setModalOpen] = useState(false);
-    const [currentPostImages, setCurrentPostImages] = useState([]);
     const [expandedCaptions, setExpandedCaptions] = useState({});
     const [isCaptionLong, setIsCaptionLong] = useState({});
 
@@ -27,7 +26,7 @@ const TrailPost = () => {
         const loadPosts = async () => {
             try {
                 setLoading(true);
-                const response = await fetch('/api/posts/feed');
+                const response = await fetch('http://localhost:5006/api/posts/feed');
                 const data = await response.json();
                 
                 if (response.ok && data.success) {
@@ -45,10 +44,10 @@ const TrailPost = () => {
 
     // User display logic
     const getUserDisplayInfo = (userObj) => {
-        if (userObj && typeof userObj === 'object' && userObj.username) {
+        if (userObj && typeof userObj === 'object' && userObj.name) {
             return {
-                name: userObj.username,
-                avatar: userObj.username.charAt(0).toUpperCase()
+                name: userObj.name,
+                avatar: userObj.name.charAt(0).toUpperCase()
             };
         }
     
@@ -58,8 +57,8 @@ const TrailPost = () => {
         };
     };
 
-    const openImageViewer = (img, postImages, index) => {
-        setCurrentImages(img);
+    const openImageViewer = (postImages, index) => {
+        setCurrentImages(postImages);
         setCurrentImageIndex(index);
         setImageViewerOpen(true);
     };
@@ -71,7 +70,7 @@ const TrailPost = () => {
     };
 
     const nextImage = () => {
-        setCurrentImageIndex((prev) => (prev + 1) % currentPostImages.length);
+        setCurrentImageIndex((prev) => (prev + 1) % currentImages.length);
     };
 
     const prevImage = () => {
@@ -117,20 +116,6 @@ const TrailPost = () => {
 
     return (
         <div className="max-w-5xl mx-auto px-6 py-20">
-            <style jsx>{`
-                .line-clamp-2 {
-                    display: -webkit-box;
-                    -webkit-line-clamp: 2;
-                    -webkit-box-orient: vertical;
-                    overflow: hidden;
-                }
-            `}</style>
-
-            <div className="text-center mb-16">
-                <h2 className="text-4xl font-bold text-gray-900 mb-4">Recent Adventures</h2>
-                <p className="text-xl text-gray-600">Stories from our community</p>
-            </div>
-
             {loading && (
                 <div className="flex justify-center items-center py-20">
                     <div className="w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
@@ -155,14 +140,13 @@ const TrailPost = () => {
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-4">
                                     <div className="relative">
-                                        <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center text-white font-semibold">
+                                        <div className="w-12 h-12 bg-gradient-to-br from-teal-600 to-teal-700 rounded-full flex items-center justify-center text-white font-semibold">
                                             {userInfo.avatar}
                                         </div>
                                     </div>
                                     <div>
-                                        <div className="flex items-center space-x-2">
+                                        <div className="flex items-center space-x-2 mb-1">
                                             <h3 className="font-semibold text-gray-900">{userInfo.name}</h3>
-                                            <span className="text-blue-600 text-xs">Verified</span>
                                         </div>
                                         <p className="text-gray-500 text-sm flex items-center">
                                             <Clock className="w-4 h-4 mr-1" />
@@ -170,6 +154,9 @@ const TrailPost = () => {
                                         </p>
                                     </div>
                                 </div>
+                                <button className='ml-auto px-3 py-1 text-black rounded-xl hover:text-teal-500 '>
+                                    <Map className='w-5 h-5'/>
+                                </button>
                             </div>
                         </div>
 
@@ -203,7 +190,7 @@ const TrailPost = () => {
                             {post.tags && post.tags.length > 0 && (
                                 <div className="flex flex-wrap gap-2 mb-0 mt-4">
                                     {post.tags.map((tag, index) => (
-                                        <span key={index} className="bg-teal-800/80 text-white px-3 py-1 rounded-full text-sm font-medium border border-blue-200">
+                                        <span key={index} className="bg-teal-100 px-2.5 py-0.5 rounded-full text-black/70 text-sm font-medium">
                                             #{tag}
                                         </span>
                                     ))}
@@ -221,8 +208,8 @@ const TrailPost = () => {
                                                 key={index}
                                                 src={img}
                                                 alt={`Image ${index + 1}`}
-                                                className="w-full h-80 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
-                                                onClick={() => openModal(img, postImages, index)}
+                                                className="w-full h-60 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
+                                                onClick={() => openImageViewer(postImages, index)}
                                             />
                                         ))}
                                     </div>
@@ -232,7 +219,7 @@ const TrailPost = () => {
                                         <img
                                             src={postImages[0]}
                                             alt="Post image"
-                                            className="w-full h-80 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
+                                            className="w-full h-60 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
                                             onClick={() => openModal(postImages[0], postImages, 0)}
                                         />
                                     </div>
@@ -253,7 +240,7 @@ const TrailPost = () => {
                             </div>
                         )}
 
-                        <div className="p-6 border-t border-gray-100">
+                        <div className="p-6 border-t border-gray-100 mt-3">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-6">
                                     <button

@@ -3,7 +3,7 @@ import { X, Image, MapPin, Clock, Hash, Send } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
-    const { currentUser, isAuthenticated } = useAuth();
+    const { user, isLoggedIn } = useAuth();
 
     const [postData, setPostData] = useState({
         content: '',
@@ -17,6 +17,10 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
     const [error, setError] = useState('');
 
     if (!isOpen) return null;
+
+    if (!user || !isLoggedIn) {
+        return null;
+    }
 
     const handleImageUpload = (e) => {
         const files = Array.from(e.target.files);
@@ -81,7 +85,7 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
 
             
             const formData = new FormData();
-            formData.append('userId', currentUser?.id);
+            formData.append('userId', user?.id || user?._id);
             formData.append('caption', postData.content.trim());
             formData.append('location', postData.location.trim());
             formData.append('tags', JSON.stringify(tags));
@@ -92,7 +96,7 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
             });
 
             // Single API call with everything
-            const response = await fetch('/api/posts/add-post', {
+            const response = await fetch('http://localhost:5006/api/posts/add-post', {
                 method: 'POST',
                 body: formData,
                 credentials: 'include'
@@ -140,16 +144,6 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
         return 'h-28';
     };
 
-    if (loading) {
-        return (
-            <div className='fixed inset-0 bg-black/20 backdrop-blur-xs flex items-center justify-center z-50'>
-                <div className='bg-gray-200 rounded-xl p-8'>
-                    <div className='text-center'>Loading...</div>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-xs flex items-center justify-center z-50 p-4">
             <div className="bg-gray-200 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -158,7 +152,7 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
                     <div className="flex items-center gap-3">
                         <div className="w-2 h-6 bg-teal-500 rounded-full"></div>
                         <h2 className="text-lg font-bold text-black">Create New Post</h2>
-                        <span className="text-sm text-gray-600">as {currentUser.name}</span>
+                        <span className="text-sm text-gray-600">as {user?.name}</span>
                     </div>
                     <button
                         onClick={onClose}

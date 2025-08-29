@@ -7,12 +7,31 @@ import {
 
 export const createPost = async (req, res) => {
     try {
+        console.log('=== CREATE POST DEBUG ===');
+        console.log('Request body:', req.body);
+        console.log('Request files:', req.files);
+        console.log('========================');
+
         const { userId, caption, location, tags } = req.body;
 
-        if (!userId || !caption || !location) {
+        if (!userId) {
             return res.status(400).json({
                 success: false,
-                message: 'User ID, caption, location are required'
+                message: 'User ID is required'
+            });
+        }
+
+        if (!caption || !caption.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Post caption is required'
+            });
+        }
+
+        if (!location || !location.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Location is required'
             });
         }
 
@@ -37,7 +56,8 @@ export const createPost = async (req, res) => {
                 processedTags = Array.isArray(tagsArray) ? 
                     [...new Set(tagsArray.map(tag => tag.trim().toLowerCase()).filter(tag => tag.length > 0))] : [];
             } catch (e) {
-                processedTags = tags.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag.length > 0);
+                console.error('Error parsing tags:', e);
+                processedTags = [];
             }
         }
 
@@ -48,24 +68,27 @@ export const createPost = async (req, res) => {
             });
         }
 
+        console.log('Uploading images to Cloudinary...');
         const uploadResults = await uploadMultipleToCloudinary(req.files);
+        console.log('Upload results:', uploadResults);
         const imageUrls = uploadResults.map(result => result.url);
         const publicIds = uploadResults.map(result => result.publicId);
 
         const newPost = new Posts({
             userId, 
-            caption, 
-            location, 
+            caption: caption.trim(), 
+            location: location.trim(), 
             imageUrls, 
             cloudinaryPublicIds: publicIds,
             tags: processedTags
         });
 
+        console.log('Saving post to database...');
         const savedPost = await newPost.save();
+        console.log('Post saved:', savedPost._id);
         const populatedPost = await Posts.findById(savedPost._id)
             .populate('userId', 'username email')
             .populate('comments.userId', 'username email');
-
         res.status(201).json({
             success: true,
             message: 'Post created successfully',
@@ -73,9 +96,10 @@ export const createPost = async (req, res) => {
         });
 
     } catch (error) {
+        console.error('Create post error:', error);
         res.status(500).json({
             success: false,
-            message: 'Server error',
+            message: 'Server error while creating post',
             error: error.message
         });
     }
@@ -300,21 +324,23 @@ export const getAllPosts = async (req, res) => {
 
 export const getFeedPosts = async (req, res) => {
     try {
+        console.log('Fetching feed posts...');
+        
         const posts = await Posts.find({})
-            .populate('userId', 'username email')
-            .populate('comments.userId', 'username email')
+            .populate('userId', 'name email')
+            .populate('comments.userId', 'name email')
             .sort({ createdAt: -1 })
             .limit(5);
-
+        console.log('Found posts:', posts.length);
         res.status(200).json({
             success: true,
             data: posts
         });
-
     } catch (error) {
+        console.error('Feed posts error:', error);
         res.status(500).json({
             success: false,
-            message: 'Server error',
+            message: 'Server error while fetching posts',
             error: error.message
         });
     }
