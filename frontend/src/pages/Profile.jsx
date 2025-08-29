@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, MapPin, Heart, MessageCircle, Share2, Edit, Trash2, X, Save, Camera, ChevronLeft, ChevronRight, Grid, List, MoreHorizontal, Settings, ExternalLink } from 'lucide-react';
+import { Clock, MapPin, Heart, MessageCircle, Share2, Edit, Trash2, X, Save, Camera, ChevronLeft, ChevronRight, Grid, List, MoreHorizontal, Settings, ExternalLink, Image, Hash } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import ImageViewer from '../components/ImageViewer';
 
@@ -32,7 +32,7 @@ const Profile = () => {
   const fetchUserPosts = async (userId) => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5006/api/auth/user-posts/${userId}`);
+      const response = await fetch(`http://localhost:5006/api/auth/${userId}/posts`);
       const result = await response.json();
       
       if (result.success) {
@@ -50,8 +50,8 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    if (currentUser && currentUser._id) {
-      fetchUserPosts(currentUser._id);
+    if (currentUser && (currentUser._id || currentUser.id)) {
+      fetchUserPosts(currentUser._id || currentUser.id);
     }
   }, [currentUser]);
 
@@ -166,7 +166,7 @@ const Profile = () => {
       }
 
       const formData = new FormData();
-      formData.append('userId', currentUser._id);
+      formData.append('userId', currentUser._id || currentUser.id);
       formData.append('caption', editForm.caption.trim());
       formData.append('location', editForm.location.trim());
       formData.append('tags', JSON.stringify(filteredTags));
@@ -176,9 +176,10 @@ const Profile = () => {
         formData.append('images', img.file);
       });
 
-      const response = await fetch(`/api/posts/${postId}`, {
+      const response = await fetch(`http://localhost:5006/api/posts/${postId}`, {
         method: 'PUT',
-        body: formData
+        body: formData,
+        credentials: 'include'
       });
       
       if (response.ok) {
@@ -200,13 +201,14 @@ const Profile = () => {
 
   const handleDelete = async (postId) => {
     try {
-      const response = await fetch(`/api/posts/${postId}`, {
+      const response = await fetch(`http://localhost:5006/api/posts/${postId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
-          userId: currentUser._id
+          userId: currentUser._id || currentUser.id
         })
       });
       
@@ -220,7 +222,7 @@ const Profile = () => {
   };
 
   const openImageViewer = (images, index = 0) => {
-    const imageUrls = images.map(img => typeof img === 'string' ? img : img.url);
+    const imageUrls = images.map(img => (typeof img === 'string' ? img : img.url));
     setImageViewer({
       isOpen: true,
       images: imageUrls,
@@ -250,16 +252,6 @@ const Profile = () => {
     }));
   };
 
-  if (authLoading || loading || !currentUser) {
-    return (
-      <div className="min-h-screen bg-gray-50 text-white">
-        <div className="flex justify-center items-center py-20">
-          <div className="w-8 h-8 border-4 border-teal-400 border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      </div>
-    );
-  }
-
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-gray-50 text-white">
@@ -273,6 +265,16 @@ const Profile = () => {
     );
   }
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 text-white">
+        <div className="flex justify-center items-center py-20">
+          <div className="w-8 h-8 border-4 border-teal-400 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
+  }
+
   const userInfo = getUserDisplayInfo();
 
   return (
@@ -280,7 +282,7 @@ const Profile = () => {
       {/* Profile Header */}
       <div className="relative">
         {/* Cover Photo */}
-        <div className="h-48 md:h-64 bg-black relative overflow-hidden">
+        <div className="h-48 md:h-64 bg-black relative overflow-hidden -mt-24">
           <img
             src="https://media.cntravellerme.com/photos/6679185364c11ffe86eb6eeb/16:9/w_3984,h_2241,c_limit/1150415140"
             alt="Cover"
@@ -322,7 +324,7 @@ const Profile = () => {
                 </div>
 
                 {/* Bio */}
-                <p className="text-gray-300 mb-4 max-w-2xl">
+                <p className="text-gray-700 mb-4 max-w-2xl">
                   {currentUser.bio || "Exploring the world, one trail at a time 🌍✨"}
                 </p>
 
@@ -392,7 +394,9 @@ const Profile = () => {
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-2 rounded-lg transition-colors ${
-                  viewMode === 'grid' ? 'bg-teal-100 text-teal-600' : 'text-gray-400 hover:text-gray-600'
+                  viewMode === 'grid'
+                    ? 'bg-teal-100 text-teal-600'
+                    : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
                 <Grid className="w-5 h-5" />
@@ -400,7 +404,9 @@ const Profile = () => {
               <button
                 onClick={() => setViewMode('list')}
                 className={`p-2 rounded-lg transition-colors ${
-                  viewMode === 'list' ? 'bg-teal-100 text-teal-600' : 'text-gray-400 hover:text-gray-600'
+                  viewMode === 'list'
+                    ? 'bg-teal-100 text-teal-600'
+                    : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
                 <List className="w-5 h-5" />
@@ -409,304 +415,375 @@ const Profile = () => {
           )}
         </div>
 
-        {/* Posts Content */}
-        {activeTab === 'posts' && (
-          <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-6'}>
-            {posts.map((post) => (
-              <div key={post._id} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                {/* Post Header */}
-                <div className="p-4 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-white font-bold">
-                      {userInfo.avatar}
+        {/* Content based on active tab */}
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="w-8 h-8 border-4 border-teal-400 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : (
+          <>
+            {activeTab === 'posts' && (
+              <>
+                {posts.length === 0 ? (
+                  <div className="text-center py-20">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Camera className="w-8 h-8 text-gray-400" />
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{userInfo.name}</h3>
-                      <div className="flex items-center text-gray-500 text-sm">
-                        <MapPin className="w-4 h-4 mr-1" />
-                        <span>{post.location}</span>
-                      </div>
-                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No posts yet</h3>
+                    <p className="text-gray-600 mb-6">Share your first adventure to get started!</p>
                   </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handleEditClick(post)}
-                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setShowDeleteConfirm(post._id)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Images */}
-                {post.imageUrls && post.imageUrls.length > 0 && (
-                  <div className="relative">
-                    {post.imageUrls.length === 1 ? (
-                      <img
-                        src={post.imageUrls[0]}
-                        alt="Post"
-                        className="w-full h-64 object-cover cursor-pointer hover:opacity-95 transition-opacity"
-                        onClick={() => openImageViewer(post.imageUrls, 0)}
-                      />
-                    ) : (
-                      <div className="grid grid-cols-2 gap-1">
-                        {post.imageUrls.slice(0, 4).map((image, index) => (
-                          <div key={index} className="relative">
-                            <img
-                              src={image}
-                              alt={`Post image ${index + 1}`}
-                              className="w-full h-32 object-cover cursor-pointer hover:opacity-95 transition-opacity"
-                              onClick={() => openImageViewer(post.imageUrls, index)}
-                            />
-                            {index === 3 && post.imageUrls.length > 4 && (
-                              <div
-                                className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white font-bold text-lg cursor-pointer"
-                                onClick={() => openImageViewer(post.imageUrls, index)}
-                              >
-                                +{post.imageUrls.length - 4}
-                              </div>
-                            )}
+                ) : (
+                  <div className={`${
+                    viewMode === 'grid'
+                      ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+                      : 'space-y-6'
+                  }`}>
+                    {posts.map((post) => (
+                      <div key={post._id} className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+                        {/* Post Image */}
+                        <div className="relative">
+                          <img
+                            src={post.imageUrls[0]}
+                            alt={post.caption}
+                            className="w-full h-64 object-cover cursor-pointer"
+                            onClick={() => openImageViewer(post.imageUrls, 0)}
+                          />
+                          {post.imageUrls.length > 1 && (
+                            <div className="absolute top-3 right-3 bg-black/70 text-white px-2 py-1 rounded-lg text-sm">
+                              +{post.imageUrls.length - 1}
+                            </div>
+                          )}
+                          
+                          {/* Edit/Delete Controls */}
+                          <div className="absolute top-3 left-3 flex space-x-2">
+                            <button
+                              onClick={() => handleEditClick(post)}
+                              className="bg-black/70 text-white p-2 rounded-full hover:bg-black/80 transition-colors"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setShowDeleteConfirm(post._id)}
+                              className="bg-black/70 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
-                        ))}
+                        </div>
+
+                        {/* Post Content */}
+                        <div className="p-4">
+                          <p className="text-gray-900 text-sm mb-3 line-clamp-2">
+                            {post.caption}
+                          </p>
+                          
+                          <div className="flex items-center text-gray-500 text-sm mb-3">
+                            <MapPin className="w-4 h-4 mr-1 text-teal-700" />
+                            {post.location}
+                          </div>
+
+                          {post.tags && post.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-3">
+                              {post.tags.slice(0, 3).map((tag, index) => (
+                                <span key={index} className="bg-teal-100 px-2.5 py-1 rounded-full text-black/70 text-xs font-medium">
+                                  #{tag}
+                                </span>
+                              ))}
+                              {post.tags.length > 3 && (
+                                <span className="text-gray-400 text-xs px-2 py-1">
+                                  +{post.tags.length - 3} more
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Post Stats */}
+                          <div className="flex items-center justify-between text-gray-500">
+                            <div className="flex items-center space-x-4 text-sm">
+                              <div className="flex items-center">
+                                <Heart className="w-4 h-4 mr-1" />
+                                {post.likes?.length || 0}
+                              </div>
+                              <div className="flex items-center">
+                                <MessageCircle className="w-4 h-4 mr-1" />
+                                {post.comments?.length || 0}
+                              </div>
+                            </div>
+                            <div className="flex items-center text-xs">
+                              <Clock className="w-3 h-3 mr-1" />
+                              {new Date(post.createdAt).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    )}
+                    ))}
                   </div>
                 )}
+              </>
+            )}
 
-                {/* Post Content */}
-                <div className="p-4">
-                  {editingPost === post._id ? (
-                    // Edit Form
-                    <div className="space-y-4">
-                      {error && (
-                        <div className="text-red-500 text-sm bg-red-50 p-2 rounded">
-                          {error}
-                        </div>
-                      )}
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Caption</label>
-                        <textarea
-                          value={editForm.caption}
-                          onChange={(e) => setEditForm({...editForm, caption: e.target.value})}
-                          className="w-full p-2 border border-gray-300 rounded-md text-gray-900"
-                          rows="3"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                        <input
-                          type="text"
-                          value={editForm.location}
-                          onChange={(e) => setEditForm({...editForm, location: e.target.value})}
-                          className="w-full p-2 border border-gray-300 rounded-md text-gray-900"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
-                        <input
-                          type="text"
-                          value={editForm.tags.join(', ')}
-                          onChange={(e) => setEditForm({...editForm, tags: e.target.value.split(',').map(tag => tag.trim())})}
-                          className="w-full p-2 border border-gray-300 rounded-md text-gray-900"
-                          placeholder="tag1, tag2, tag3"
-                        />
-                      </div>
-
-                      {/* Existing Images */}
-                      {editForm.existingImages.length > 0 && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Current Images</label>
-                          <div className="grid grid-cols-3 gap-2">
-                            {editForm.existingImages.map((image, index) => (
-                              <div key={index} className="relative">
-                                <img src={image} alt={`Current ${index}`} className="w-full h-20 object-cover rounded" />
-                                <button
-                                  type="button"
-                                  onClick={() => removeExistingImage(image)}
-                                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* New Images */}
-                      {editForm.newImages.length > 0 && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">New Images</label>
-                          <div className="grid grid-cols-3 gap-2">
-                            {editForm.newImages.map((image) => (
-                              <div key={image.id} className="relative">
-                                <img src={image.src} alt={image.name} className="w-full h-20 object-cover rounded" />
-                                <button
-                                  type="button"
-                                  onClick={() => removeNewImage(image.id)}
-                                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Add Images */}
-                      {(editForm.existingImages.length + editForm.newImages.length) < 5 && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Add Images</label>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleNewImageUpload}
-                            className="w-full p-2 border border-gray-300 rounded-md text-gray-900"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">
-                            {5 - (editForm.existingImages.length + editForm.newImages.length)} more images allowed
-                          </p>
-                        </div>
-                      )}
-                      
-                      <div className="flex justify-end space-x-3">
-                        <button
-                          onClick={() => setEditingPost(null)}
-                          className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => handleEditSave(post._id)}
-                          className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors flex items-center"
-                        >
-                          <Save className="w-4 h-4 mr-2" />
-                          Save
-                        </button>
-                      </div>
+            {activeTab === 'images' && (
+              <>
+                {getAllImages().length === 0 ? (
+                  <div className="text-center py-20">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Grid className="w-8 h-8 text-gray-400" />
                     </div>
-                  ) : (
-                    // View Mode
-                    <div>
-                      <p className="text-gray-800 mb-3">{post.caption}</p>
-                      
-                      {post.tags && post.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {post.tags.map((tag, index) => (
-                            <span key={index} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                              #{tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      
-                      <div className="flex items-center justify-between text-gray-500 text-sm">
-                        <div className="flex items-center space-x-4">
-                          <div className="flex items-center">
-                            <Heart className="w-4 h-4 mr-1" />
-                            <span>{post.likes?.length || 0}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <MessageCircle className="w-4 h-4 mr-1" />
-                            <span>{post.comments?.length || 0}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <Share2 className="w-4 h-4 mr-1" />
-                            <span>Share</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center">
-                          <Clock className="w-4 h-4 mr-1" />
-                          <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Images Tab */}
-        {activeTab === 'images' && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {getAllImages().map((image, index) => (
-              <div key={index} className="relative group">
-                <img
-                  src={image.url}
-                  alt={`Image ${index + 1}`}
-                  className="w-full h-40 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                  onClick={() => openImageViewer(getAllImages().map(img => img.url), index)}
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-lg transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                  <div className="text-white text-center">
-                    <div className="flex items-center justify-center space-x-4 text-sm">
-                      <span className="flex items-center">
-                        <Heart className="w-4 h-4 mr-1" />
-                        {image.likes}
-                      </span>
-                      <span className="flex items-center">
-                        <MessageCircle className="w-4 h-4 mr-1" />
-                        {image.comments}
-                      </span>
-                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No images yet</h3>
+                    <p className="text-gray-600">Your posted images will appear here</p>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Empty State */}
-        {((activeTab === 'posts' && posts.length === 0) || (activeTab === 'images' && getAllImages().length === 0)) && (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-              {activeTab === 'posts' ? (
-                <List className="w-8 h-8 text-gray-400" />
-              ) : (
-                <Grid className="w-8 h-8 text-gray-400" />
-              )}
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No {activeTab} yet
-            </h3>
-            <p className="text-gray-500 mb-4">
-              {activeTab === 'posts' 
-                ? "You haven't created any posts yet. Start sharing your adventures!" 
-                : "No images to display. Create some posts with photos first!"
-              }
-            </p>
-          </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {getAllImages().map((image, index) => (
+                      <div
+                        key={index}
+                        className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer group"
+                        onClick={() => openImageViewer(getAllImages().map(img => img.url), index)}
+                      >
+                        <img
+                          src={image.url}
+                          alt={`Post image ${index + 1}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </>
         )}
       </div>
 
-      
-      <ImageViewer
-        isOpen={imageViewer.isOpen}
-        images={imageViewer.images}
-        currentIndex={imageViewer.currentIndex}
-        onClose={closeImageViewer}
-        onNext={nextImage}
-        onPrev={prevImage}
-      />
+      {/* Edit Post Modal */}
+      {editingPost && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-200 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-400">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-6 bg-teal-500 rounded-full"></div>
+                <h2 className="text-lg font-bold text-black">Edit Post</h2>
+                <span className="text-sm text-gray-600">as {userInfo.name}</span>
+              </div>
+              <button
+                onClick={() => setEditingPost(null)}
+                className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-500 flex items-center justify-center text-gray-700 hover:text-white transition-all duration-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {error && (
+              <div className="mx-5 mt-5 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+
+            {/* Content */}
+            <div className="p-5">
+              {/* Main Content - Two Columns */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+                {/* Left Column - Photo Management */}
+                <div className="space-y-5">
+                  <div className="h-full flex flex-col">
+                    <label className="block text-sm font-medium text-black mb-2">
+                      Manage Photos ({editForm.existingImages.length + editForm.newImages.length}/5)
+                    </label>
+
+                    {/* Image Management Area */}
+                    <div className="relative flex-1 min-h-[200px]">
+                      {editForm.existingImages.length === 0 && editForm.newImages.length === 0 ? (
+                        // Upload area when no images
+                        <>
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={handleNewImageUpload}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                          />
+                          <div className="border-2 border-dashed border-gray-500 rounded-xl p-6 text-center h-full hover:border-teal-500/50 hover:bg-gray-800/30 transition-all duration-200 cursor-pointer flex flex-col justify-center">
+                            <Image className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                            <p className="text-gray-500 mb-1 font-medium text-sm">
+                              Click to upload images
+                            </p>
+                            <p className="text-xs text-gray-500">JPG, PNG or GIF (Max 5 images)</p>
+                          </div>
+                        </>
+                      ) : (
+                        // Image preview grid
+                        <div className="w-full">
+                          {/* Combined Image Grid */}
+                          <div className={`grid ${
+                            (editForm.existingImages.length + editForm.newImages.length) === 1 ? 'grid-cols-1' : 'grid-cols-2'
+                          } gap-2 mb-3`}>
+                            {/* Existing Images */}
+                            {editForm.existingImages.map((imageUrl, index) => (
+                              <div key={`existing-${index}`} className="relative group">
+                                <img
+                                  src={imageUrl}
+                                  alt={`Current ${index + 1}`}
+                                  className={`w-full ${
+                                    (editForm.existingImages.length + editForm.newImages.length) === 1 ? 'h-64' : 
+                                    (editForm.existingImages.length + editForm.newImages.length) === 2 ? 'h-48' :
+                                    (editForm.existingImages.length + editForm.newImages.length) <= 4 ? 'h-32' : 'h-28'
+                                  } object-cover rounded-lg border-2 border-gray-300`}
+                                />
+                                <button
+                                  onClick={() => removeExistingImage(imageUrl)}
+                                  className="absolute -top-2 -right-2 w-5 h-5 bg-gray-500 hover:bg-red-600 text-white font-medium rounded-full flex items-center justify-center shadow-lg transition-all duration-200 z-10"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                                <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-2 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                  Current Image
+                                </div>
+                              </div>
+                            ))}
+                            
+                            {/* New Images */}
+                            {editForm.newImages.map((image) => (
+                              <div key={image.id} className="relative group">
+                                <img
+                                  src={image.src}
+                                  alt={image.name}
+                                  className={`w-full ${
+                                    (editForm.existingImages.length + editForm.newImages.length) === 1 ? 'h-64' : 
+                                    (editForm.existingImages.length + editForm.newImages.length) === 2 ? 'h-48' :
+                                    (editForm.existingImages.length + editForm.newImages.length) <= 4 ? 'h-32' : 'h-28'
+                                  } object-cover rounded-lg border-2 border-gray-300`}
+                                />
+                                <button
+                                  onClick={() => removeNewImage(image.id)}
+                                  className="absolute -top-2 -right-2 w-5 h-5 bg-gray-500 hover:bg-red-600 text-white font-medium rounded-full flex items-center justify-center shadow-lg transition-all duration-200 z-10"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                                <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-2 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 truncate">
+                                  {image.name}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Add more images button */}
+                          {(editForm.existingImages.length + editForm.newImages.length) < 5 && (
+                            <div className="relative">
+                              <input
+                                type="file"
+                                multiple
+                                accept="image/*"
+                                onChange={handleNewImageUpload}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                              />
+                              <button
+                                type="button"
+                                className="w-full py-3 border-2 border-dashed border-gray-400 rounded-lg text-gray-600 hover:border-teal-500 hover:text-teal-600 hover:bg-teal-50 transition-all duration-200 text-sm font-medium flex items-center justify-center gap-2"
+                              >
+                                <Image className="w-4 h-4" />
+                                Add More Images ({5 - editForm.existingImages.length - editForm.newImages.length} remaining)
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column - Text Content */}
+                <div className="space-y-5 flex flex-col h-full">
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-2">
+                      What's on your mind?
+                    </label>
+                    <textarea
+                      value={editForm.caption}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, caption: e.target.value }))}
+                      placeholder="Share the story of your adventure..."
+                      className="w-full h-32 p-3 bg-gray-200 border border-gray-500 rounded-xl text-black placeholder-gray-500 focus:border-teal-700 focus:ring-1 focus:ring-teal-400/40 focus:outline-none resize-none transition-all duration-200 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-2">
+                      Edit Location
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+                        <input
+                            type="text"
+                            value={editForm.location}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, location: e.target.value }))}
+                            placeholder="Where was this taken?"
+                            className="w-full pl-9 pr-24 p-2.5 bg-gray-200 border border-gray-500 rounded-xl text-black placeholder-gray-500 focus:border-teal-700 focus:ring-1 focus:ring-teal-400/40 focus:outline-none transition-all duration-200 text-sm"
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-gray-500 rounded-lg text-white hover:text-gray-900 hover:bg-teal-500 transition-all duration-200 text-xs font-medium"
+                        >                            
+                          Pick on Map
+                        </button>
+                      </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-2">Edit Tags</label>
+                    <div className="relative">
+                      <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+                      <input
+                          type="text"
+                          value={editForm.tags.join(', ')}
+                          onChange={(e) => setEditForm(prev => ({ 
+                          ...prev, 
+                          tags: e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag)
+                          }))}
+                          placeholder="Add tags..."
+                          className="w-full pl-9 pr-24 p-2.5 bg-gray-200 border border-gray-500 rounded-xl text-black placeholder-gray-500 focus:border-teal-700 focus:ring-1 focus:ring-teal-400/40 focus:outline-none transition-all duration-200 text-sm"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Separate tags with commas, Maximum 10 tags Allowed</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 pt-5 border-t border-gray-300">
+                <button
+                  onClick={() => setEditingPost(null)}
+                  className="px-6 py-2.5 text-gray-700 hover:text-gray-900 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleEditSave(editingPost)}
+                  disabled={loading}
+                  className="px-8 py-2.5 bg-teal-600 hover:bg-teal-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Update Post
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-transparent bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Delete Post</h3>
             <p className="text-gray-600 mb-6">
               Are you sure you want to delete this post? This action cannot be undone.
@@ -714,13 +791,13 @@ const Profile = () => {
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowDeleteConfirm(null)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleDelete(showDeleteConfirm)}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
               >
                 Delete
               </button>
@@ -728,6 +805,16 @@ const Profile = () => {
           </div>
         </div>
       )}
+
+      {/* Image Viewer Modal */}
+      <ImageViewer
+      isOpen={imageViewer.isOpen}
+        images={imageViewer.images}
+        currentIndex={imageViewer.currentIndex}
+        onClose={closeImageViewer}
+        onNext={nextImage}
+        onPrev={prevImage}
+      />
     </div>
   );
 };
