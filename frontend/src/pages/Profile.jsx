@@ -4,10 +4,10 @@ import { useAuth } from '../hooks/useAuth';
 import ImageViewer from '../components/ImageViewer';
 
 const Profile = () => {
-  const { currentUser, loading: authLoading, isAuthenticated } = useAuth();
+  const { user: currentUser, authLoading, isLoggedIn } = useAuth();
 
   const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
 
   const [editForm, setEditForm] = useState({
@@ -32,7 +32,7 @@ const Profile = () => {
   const fetchUserPosts = async (userId) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/auth/user-posts/${userId}`);
+      const response = await fetch(`http://localhost:5006/api/auth/user-posts/${userId}`);
       const result = await response.json();
       
       if (result.success) {
@@ -260,7 +260,7 @@ const Profile = () => {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-gray-50 text-white">
         <div className="flex justify-center items-center py-20">

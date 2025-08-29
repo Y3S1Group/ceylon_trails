@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
-import SignupImage from "../assets/login.png"; // you can use a different image if you want
+//import SignupImage from "../assets/login.png"; // you can use a different image if you want
 
 const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -51,7 +51,7 @@ const SignUpPage = () => {
       {/* Left Side - Image */}
       <div className="hidden lg:flex lg:w-1/2 p-6">
         <img
-          src={SignupImage}
+          src="https://images.unsplash.com/photo-1580803834205-0e64baf9d13d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
           alt="Sign Up Illustration"
           className="w-full h-full object-cover rounded-2xl shadow-lg"
         />

@@ -13,9 +13,8 @@ const Explore = ({ searchValue, setSearchValue, showSearchInNav }) => {
   const [isVisible, setIsVisible] = useState({});
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isLoggedIn, authLoading } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -143,7 +142,7 @@ const Explore = ({ searchValue, setSearchValue, showSearchInNav }) => {
       </div>
       <TrailPost />
 
-      {!authLoading && isAuthenticated && (
+      {!authLoading && isLoggedIn && (
         <button
           className="group fixed bottom-14 right-18 w-14 h-14 bg-teal-600/40 backdrop-blur-xs border border-teal-600 hover:border-teal-800 hover:bg-teal-600/90 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 z-40"
           onClick={() => setShowCreatePost(true)}
@@ -153,7 +152,7 @@ const Explore = ({ searchValue, setSearchValue, showSearchInNav }) => {
         </button>
       )}
 
-      {isAuthenticated && (
+      {!authLoading && isLoggedIn && (
         <CreatePost
           isOpen={showCreatePost}
           onClose={() => setShowCreatePost(false)}
