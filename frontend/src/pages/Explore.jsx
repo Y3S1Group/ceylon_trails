@@ -13,6 +13,7 @@ const Explore = ({ searchValue, setSearchValue, showSearchInNav }) => {
   const [isVisible, setIsVisible] = useState({});
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const { isLoggedIn, authLoading } = useAuth();
 
@@ -34,21 +35,20 @@ const Explore = ({ searchValue, setSearchValue, showSearchInNav }) => {
 
   useEffect(() => {
     const loadPosts = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/posts/feed');
-        const data = await response.json();
-        
-        if (response.ok && data.success) {
-          setPosts(data.data);
+        try {
+            setLoading(true);
+            const response = await fetch('http://localhost:5006/api/posts/feed');
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                setPosts(data.data);
+            }
+        } catch (error) {
+            console.error('Error loading posts:', error);
+        } finally {
+            setLoading(false);
         }
-      } catch (error) {
-        console.error('Error loading posts:', error);
-      } finally {
-        setLoading(false);
-      }
     };
-
     loadPosts();
   }, []);
 
@@ -142,6 +142,7 @@ const Explore = ({ searchValue, setSearchValue, showSearchInNav }) => {
       </div>
       <TrailPost />
 
+      {/*floating button for create a post*/}
       {!authLoading && isLoggedIn && (
         <button
           className="group fixed bottom-14 right-18 w-14 h-14 bg-teal-600/40 backdrop-blur-xs border border-teal-600 hover:border-teal-800 hover:bg-teal-600/90 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 z-40"
@@ -159,6 +160,7 @@ const Explore = ({ searchValue, setSearchValue, showSearchInNav }) => {
           onPostCreated={handlePostCreated}
         />
       )}
+      {/*floating button for create a post*/}
       
       <Footer />
     </div>
