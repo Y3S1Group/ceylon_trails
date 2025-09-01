@@ -1,14 +1,65 @@
-import React, { useState } from "react";
-import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
-//import SignupImage from "../assets/login.png"; // you can use a different image if you want
+import React, { useState, useEffect } from "react";
+import { Mail, Lock, User, Eye, EyeOff, Check, X } from "lucide-react";
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 const SignUpPage = () => {
+  const navigate = useNavigate();
+  const { login } = useAuth(); // ✅ Get login function from auth
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
   });
+  
+  const [emailValid, setEmailValid] = useState(null);
+  const [passwordStrength, setPasswordStrength] = useState({
+    score: 0,
+    feedback: [],
+    color: "red"
+  });
+
+  // ✅ Email validation
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  // ✅ Password strength logic (unchanged)
+  const calculatePasswordStrength = (password) => {
+    let score = 0;
+    const feedback = [];
+    if (password.length === 0) {
+      return { score: 0, feedback: [], color: "red" };
+    }
+    if (password.length >= 8) score += 1;
+    else feedback.push("At least 8 characters");
+    if (/[A-Z]/.test(password)) score += 1;
+    else feedback.push("One uppercase letter");
+    if (/[a-z]/.test(password)) score += 1;
+    else feedback.push("One lowercase letter");
+    if (/\d/.test(password)) score += 1;
+    else feedback.push("One number");
+    if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) score += 1;
+    else feedback.push("One special character");
+
+    let color = "red";
+    if (score >= 4) color = "green";
+    else if (score >= 3) color = "yellow";
+    else if (score >= 2) color = "orange";
+    return { score, feedback, color };
+  };
+
+  useEffect(() => {
+    if (formData.email.length > 0) {
+      setEmailValid(validateEmail(formData.email));
+    } else {
+      setEmailValid(null);
+    }
+  }, [formData.email]);
+
+  useEffect(() => {
+    setPasswordStrength(calculatePasswordStrength(formData.password));
+  }, [formData.password]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -18,8 +69,19 @@ const SignUpPage = () => {
     }));
   };
 
+  // ✅ Handle Signup + Auto Login
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validateEmail(formData.email)) {
+      alert("Please enter a valid email address");
+      return;
+    }
+
+    if (passwordStrength.score < 3) {
+      alert("Please choose a stronger password");
+      return;
+    }
 
     try {
       const response = await fetch("http://localhost:5006/api/auth/register", {
@@ -34,11 +96,18 @@ const SignUpPage = () => {
 
       if (!response.ok) {
         alert(data.message || "Registration failed");
-        return;
+        return;  
       }
 
-      alert("Registration successful!");
-      console.log("New user:", data.user);
+      // ✅ Automatically log in after signup
+      const result = await login(formData.email, formData.password);
+
+      if (result.success) {
+        navigate("/"); // ✅ Now explore will show logged-in view
+      } else {
+        alert("Signup successful, but login failed. Please log in manually.");
+        navigate("/login");
+      }
 
     } catch (err) {
       console.error("Error during signup:", err);
@@ -46,196 +115,235 @@ const SignUpPage = () => {
     }
   };
 
+  const getPasswordStrengthText = () => {
+    if (passwordStrength.score === 0) return "";
+    if (passwordStrength.score <= 2) return "Weak";
+    if (passwordStrength.score === 3) return "Fair";
+    if (passwordStrength.score === 4) return "Good";
+    return "Strong";
+  };
+
+  const getPasswordStrengthColor = () => {
+    switch (passwordStrength.color) {
+      case "red": return "bg-red-500";
+      case "orange": return "bg-orange-500";
+      case "yellow": return "bg-yellow-500";
+      case "green": return "bg-green-500";
+      default: return "bg-gray-300";
+    }
+  };
+
+  const isFormValid = formData.name.trim().length > 0 && emailValid && passwordStrength.score >= 3;
+
+  const formVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: "easeOut",
+        type: "spring",
+        stiffness: 300
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen flex">
-      {/* Left Side - Image */}
-      <div className="hidden lg:flex lg:w-1/2 p-6">
-        <img
-          src="https://images.unsplash.com/photo-1580803834205-0e64baf9d13d?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-          alt="Sign Up Illustration"
-          className="w-full h-full object-cover rounded-2xl shadow-lg"
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Background Video */}
+      <motion.div
+        className="absolute inset-0"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+      >
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+          src="/src/assets/loginSignup.mp4"
         />
-      </div>
+      </motion.div>
 
-      {/* Right Side - Sign Up Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h2>
-              <p className="text-gray-600">Sign up to get started with your account</p>
-            </div>
+      {/* Shadow Overlay */}
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+      />
+      <motion.div
+        className="absolute inset-0 bg-black/20"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1, delay: 0.2 }}
+      />
 
-            {/* Sign Up Form */}
-            <div className="space-y-6">
-              {/* Name Field */}
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                    placeholder="Enter your full name"
-                  />
-                </div>
-              </div>
-
-              {/* Email Field */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                    placeholder="Enter your email"
-                  />
-                </div>
-              </div>
-
-              {/* Password Field */}
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    required
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                    placeholder="Enter your password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="button"
-                onClick={handleSubmit}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform hover:scale-105 transition duration-200 font-medium"
-              >
-                Sign Up
-              </button>
-            </div>
-
-            {/* Divider */}
-            <div className="mt-8 mb-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Or continue with</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Social Buttons */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <button
-                type="button"
-                className="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition duration-200"
-              >
-                {/* Google Icon */}
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path
-                    fill="currentColor"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 
-                    1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 
-                    3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M12 23c2.97 0 5.46-.98 
-                    7.28-2.66l-3.57-2.77c-.98.66-2.23 
-                    1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 
-                    20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 
-                    8.55 1 10.22 1 12s.43 3.45 1.18 
-                    4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M12 5.38c1.62 0 3.06.56 
-                    4.21 1.64l3.15-3.15C17.45 2.09 14.97 
-                    1 12 1 7.7 1 3.99 3.47 2.18 
-                    7.07l3.66 2.84c.87-2.6 3.3-4.53 
-                    6.16-4.53z"
-                  />
-                </svg>
-                <span className="ml-2">Google</span>
-              </button>
-
-              <button
-                type="button"
-                className="w-full inline-flex justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition duration-200"
-              >
-                {/* Facebook Icon */}
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 
-                  5.373-12 12c0 5.99 4.388 10.954 
-                  10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 
-                  1.792-4.669 4.533-4.669 1.312 
-                  0 2.686.235 2.686.235v2.953H15.83c-1.491 
-                  0-1.956.925-1.956 1.874v2.25h3.328l-.532 
-                  3.47h-2.796v8.385C19.612 23.027 
-                  24 18.062 24 12.073z"/>
-                </svg>
-                <span className="ml-2">Facebook</span>
-              </button>
-            </div>
-
-            {/* Login Link */}
-            <p className="text-center text-sm text-gray-600">
-              Already have an account?{" "}
-              <a href="#" className="font-medium text-blue-600 hover:text-blue-500 transition duration-200">
-                Sign in here
-              </a>
-            </p>
-          </div>
+      {/* Signup Form */}
+      <motion.div
+        className="relative z-10 w-full max-w-md mx px-6 bg-transparent backdrop-blur-sm border border-white/20 rounded-2xl shadow-xl p-8"
+        variants={formVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-white mb-2">Create Account</h2>
+          <p className="text-white/80">Sign up to get started with your account</p>
         </div>
-      </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Name Field */}
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-white/90 mb-2">
+              Full Name
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <User className="h-5 w-5 text-white/60" />
+              </div>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                value={formData.name}
+                onChange={handleInputChange}
+                className="block w-full pl-10 pr-3 py-3 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-white placeholder-white/50 transition duration-200"
+                placeholder="Enter your full name"
+              />
+            </div>
+          </div>
+
+          {/* Email Field */}
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-white/90 mb-2">
+              Email Address
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Mail className="h-5 w-5 text-white/60" />
+              </div>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                value={formData.email}
+                onChange={handleInputChange}
+                className={`block w-full pl-10 pr-10 py-3 bg-white/10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-white placeholder-white/50 transition duration-200 ${
+                  emailValid === null ? 'border-white/20' :
+                  emailValid ? 'border-green-500' : 'border-red-500'
+                }`}
+                placeholder="Enter your email"
+              />
+              {emailValid !== null && (
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                  {emailValid ? (
+                    <Check className="h-5 w-5 text-green-500" />
+                  ) : (
+                    <X className="h-5 w-5 text-red-500" />
+                  )}
+                </div>
+              )}
+            </div>
+            {formData.email.length > 0 && !emailValid && (
+              <p className="mt-1 text-sm text-red-400">Please enter a valid email address</p>
+            )}
+          </div>
+
+          {/* Password Field */}
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-white/90 mb-2">
+              Password
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Lock className="h-5 w-5 text-white/60" />
+              </div>
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                required
+                value={formData.password}
+                onChange={handleInputChange}
+                className="block w-full pl-10 pr-10 py-3 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-white placeholder-white/50 transition duration-200"
+                placeholder="Enter your password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5 text-white/60 hover:text-white/80" />
+                ) : (
+                  <Eye className="h-5 w-5 text-white/60 hover:text-white/80" />
+                )}
+              </button>
+            </div>
+
+            {/* Password Strength Indicator */}
+            {formData.password.length > 0 && (
+              <div className="mt-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm text-white/80">Password strength:</span>
+                  <span className={`text-sm font-medium ${
+                    passwordStrength.color === 'red' ? 'text-red-400' :
+                    passwordStrength.color === 'orange' ? 'text-orange-400' :
+                    passwordStrength.color === 'yellow' ? 'text-yellow-400' :
+                    'text-green-400'
+                  }`}>
+                    {getPasswordStrengthText()}
+                  </span>
+                </div>
+                <div className="w-full bg-white/20 rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor()}`}
+                    style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+                  ></div>
+                </div>
+                {passwordStrength.feedback.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs text-white/60 mb-1">Password must include:</p>
+                    <ul className="text-xs text-white/60 space-y-1">
+                      {passwordStrength.feedback.map((item, index) => (
+                        <li key={index} className="flex items-center">
+                          <X className="h-3 w-3 text-red-400 mr-1" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={!isFormValid}
+            className={`w-full py-3 px-4 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:ring-offset-1 focus:ring-offset-transparent transform transition duration-200 font-medium ${
+              isFormValid 
+                ? 'bg-gradient-to-r from-teal-600 to-blue-600 text-white hover:from-teal-700 hover:to-blue-700 cursor-pointer'
+                : 'bg-gray-600/50 text-white/50 cursor-not-allowed'
+            }`}
+          >
+            Sign Up
+          </button>
+        </form>
+
+        <p className="text-center text-sm text-white/80 mt-8">
+          Already have an account?{" "}
+          <a href="/login" className="font-medium text-teal-400 hover:text-teal-300 transition duration-200">
+            Sign in here
+          </a>
+        </p>
+      </motion.div>
     </div>
   );
 };
