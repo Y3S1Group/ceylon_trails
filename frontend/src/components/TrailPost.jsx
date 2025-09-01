@@ -1,4 +1,4 @@
-import { Award, Bookmark, Camera, Clock, Compass, Heart, MapPin, MessageCircle, Mountain, Share2, Star, ChevronLeft, ChevronRight, Plus, Map } from 'lucide-react';
+import { Award, Bookmark, Camera, Clock, Compass, HeartHandshake, MapPin, MessageCircle, Mountain, Share2, Star, ChevronLeft, ChevronRight, Plus, Map } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
 import ImageViewer from './ImageViewer';
 
@@ -251,9 +251,9 @@ const TrailPost = () => {
                                                 : 'text-gray-600 hover:text-red-500 hover:bg-red-50'
                                         }`}
                                     >
-                                        <Heart className={`w-5 h-5 ${liked[post._id] ? 'fill-current' : ''}`} />
+                                        <HeartHandshake className={`w-5 h-5 ${liked[post._id] ? 'fill-current' : ''}`} />
                                         <span className="text-sm font-medium">
-                                            {liked[post._id] ? 'Liked' : 'Like'} ({(post.likes?.length || 0) + (liked[post._id] ? 1 : 0)})
+                                            {liked[post._id] ? 'Finds Helpfull' : 'Helpfull'} ({(post.likes?.length || 0) + (liked[post._id] ? 1 : 0)})
                                         </span>
                                     </button>
                                     <button
