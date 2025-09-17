@@ -16,6 +16,6 @@ authRouter.post('/admin-register', adminRegister);
 
 // NEW: Profile management routes
 authRouter.put('/update-profile', userAuth, updateProfile);
-
+authRouter.delete('/delete-profile', userAuth, deleteProfile);
 
 export default authRouter;
