@@ -1,7 +1,16 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 .line-clamp-2 {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+.leaflet-pane {
+  z-index: 0 !important;
+}
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 0 !important;
 }
