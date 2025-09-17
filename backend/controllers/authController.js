@@ -4,6 +4,7 @@ import 'dotenv/config';
 import userModel from '../models/userModel.js';
 import { text } from 'express';
 import transporter from '../config/nodemailer.js';
+import postsModel from '../models/Posts.js'; // to delete all posts of deleted acount
 
 
 export const register = async (req, res) => {
@@ -215,6 +216,46 @@ export const getCurrentUser = async (req, res) => {
     return res.status(500).json({ loggedIn: false, user: null });
   }
 };
+
+//update user profile function
+export const updateProfile = async (req, res) => {
+    const userId = req.userId;
+    const { name, email, password } = req.body;
+
+    if (!name && !email && !password) {
+        return res.json({ success: false, message: 'No update data provided' });
+    }
+
+    try {
+        const user = await userModel.findById(userId);
+        if (!user) {
+            return res.json({ success: false, message: 'User not found' });
+        }
+
+        // Check email uniqueness if email is being updated
+        if (email && email !== user.email) {
+            const existingUser = await userModel.findOne({ email });
+            if (existingUser) {
+                return res.json({ success: false, message: 'Email already exists' });
+            }
+        }
+
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (email) updateData.email = email;
+        if (password) {
+            updateData.password = await bcrypt.hash(password, 10);
+        }
+
+        await userModel.findByIdAndUpdate(userId, updateData);
+
+        return res.json({ success: true, message: 'Profile updated successfully' });
+
+    } catch (error) {
+        return res.json({ success: false, message: error.message });
+    }
+};
+
 
 export const adminRegister = async (req, res) => {
     const { name, email, password } = req.body;
