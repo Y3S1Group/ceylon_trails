@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Image, MapPin, Clock, Hash, Send } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import LocationInput from './LocationInput';
 
 const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
     const { user, isLoggedIn } = useAuth();
@@ -12,6 +13,9 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
         visibility: 'Public'
     });
 
+    const [locationSuggestions, setLocationSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [selectedCoordinates, setSelectedCoordinates] = useState(null);
     const [uploadedImages, setUploadedImages] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -40,6 +44,7 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
             reader.readAsDataURL(file);
         });
     };
+    
 
     const removeImage = (id) => {
         setUploadedImages(prev => prev.filter(img => img.id !== id));
@@ -50,6 +55,12 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
         setLoading(true);
         
         try {
+            console.log('=== VALIDATION DEBUG ===');
+            console.log('postData.location:', `"${postData.location}"`);
+            console.log('selectedCoordinates:', selectedCoordinates);
+            console.log('uploadedImages.length:', uploadedImages.length);
+            console.log('=======================');
+
             // Validation
             if (!postData.content.trim()) {
                 throw new Error('Post content is required');
@@ -62,6 +73,9 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
             }
             if (uploadedImages.length > 5) {
                 throw new Error('Maximum 5 images allowed');
+            }
+            if (!selectedCoordinates || !selectedCoordinates.lat || !selectedCoordinates.lon) {
+                throw new Error('Please select a location from suggestions');
             }
 
             const tags = postData.tags.trim() ? 
@@ -88,6 +102,7 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
             formData.append('userId', user?.id || user?._id);
             formData.append('caption', postData.content.trim());
             formData.append('location', postData.location.trim());
+            formData.append('coordinates', JSON.stringify(selectedCoordinates));
             formData.append('tags', JSON.stringify(tags));
 
             // Add all images to FormData
@@ -270,22 +285,17 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
                                     Add Location
                                 </label>
                                 <div className="relative">
-                                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                    <input
-                                        type="text"
+                                    <LocationInput
                                         value={postData.location}
-                                        onChange={(e) =>
-                                            setPostData({ ...postData, location: e.target.value })
-                                        }
-                                        placeholder="Add a location..."
-                                        className="w-full pl-9 pr-24 p-2.5 bg-gray-200 border border-gray-500 rounded-xl text-black placeholder-gray-500 focus:border-teal-700 focus:ring-1 focus:ring-teal-400/40 focus:outline-none transition-all duration-200 text-sm"
+                                        onChange={({ location, coordinates }) => {
+                                            console.log('LocationInput onChange:', { location, coordinates }); // Debug log
+                                            setPostData((prev) => ({
+                                                ...prev,
+                                                location,
+                                            }));
+                                            setSelectedCoordinates(coordinates);
+                                        }}
                                     />
-                                    <button
-                                        type="button"
-                                        className="absolute right-1 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-gray-500 rounded-lg text-white hover:text-gray-900 hover:bg-teal-500 transition-all duration-200 text-xs font-medium"
-                                    >
-                                        Pick on Map
-                                    </button>
                                 </div>
                             </div>
 

@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useAuth } from '../hooks/useAuth';
 import ImageViewer from '../components/ImageViewer';
+import LocationInput from '../components/LocationInput';
 
 const Profile = () => {
   const { user: currentUser, authLoading, isLoggedIn, logout } = useAuth();
@@ -11,6 +12,7 @@ const Profile = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
+  const [selectedCoordinates, setSelectedCoordinates] = useState(null);
   const [editForm, setEditForm] = useState({
     caption: '',
     location: '',
@@ -107,6 +109,15 @@ const Profile = () => {
       existingImages: post.imageUrls,
       newImages: []
     });
+
+    if (post.coordinates && post.coordinates.coordinates) {
+      setSelectedCoordinates({
+        lat: post.coordinates.coordinates[1],
+        lon: post.coordinates.coordinates[0]
+      });
+    } else {
+      setSelectedCoordinates(null);
+    }
     setError('');
   };
 
@@ -175,12 +186,21 @@ const Profile = () => {
         return;
       }
 
+      if (!selectedCoordinates || !selectedCoordinates.lat || !selectedCoordinates.lon) {
+        setError('Please select a location from suggestions');
+        return;
+      }
+
       const formData = new FormData();
       formData.append('userId', currentUser._id || currentUser.id);
       formData.append('caption', editForm.caption.trim());
       formData.append('location', editForm.location.trim());
       formData.append('tags', JSON.stringify(filteredTags));
       formData.append('existingImages', JSON.stringify(editForm.existingImages));
+
+      if (selectedCoordinates) {
+        formData.append('coordinates', JSON.stringify(selectedCoordinates));
+      }
       
       editForm.newImages.forEach((img) => {
         formData.append('images', img.file);
@@ -588,7 +608,10 @@ const Profile = () => {
                   <span className="text-sm text-gray-600">as {userInfo.name}</span>
                 </div>
                 <button
-                  onClick={() => setEditingPost(null)}
+                  onClick={() => {
+                    setEditingPost(null);
+                    setSelectedCoordinates(null);
+                  }}
                   className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-500 flex items-center justify-center text-gray-700 hover:text-white transition-all duration-200"
                 >
                   <X className="w-4 h-4" />
@@ -732,20 +755,17 @@ const Profile = () => {
                         Edit Location
                       </label>
                       <div className="relative">
-                        <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
-                        <input
-                          type="text"
-                          value={editForm.location}
-                          onChange={(e) => setEditForm(prev => ({ ...prev, location: e.target.value }))}
-                          placeholder="Where was this taken?"
-                          className="w-full pl-9 pr-24 p-2.5 bg-gray-200 border border-gray-500 rounded-xl text-black placeholder-gray-500 focus:border-teal-700 focus:ring-1 focus:ring-teal-400/40 focus:outline-none transition-all duration-200 text-sm"
+                        <LocationInput
+                          value = {editForm.location}
+                          onChange={({ location, coordinates }) => {
+                            console.log('Edit LocationInput onChange:', { location, coordinates }); // Debug log
+                            setEditForm((prev) => ({
+                              ...prev,
+                              location,
+                            }));
+                            setSelectedCoordinates(coordinates);
+                          }}
                         />
-                        <button
-                          type="button"
-                          className="absolute right-1 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-gray-500 rounded-lg text-white hover:text-gray-900 hover:bg-teal-500 transition-all duration-200 text-xs font-medium"
-                        >
-                          Pick on Map
-                        </button>
                       </div>
                     </div>
 
