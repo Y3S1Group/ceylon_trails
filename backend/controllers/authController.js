@@ -256,6 +256,34 @@ export const updateProfile = async (req, res) => {
     }
 };
 
+//delete user profile function
+export const deleteProfile = async (req, res) => {
+    const userId = req.userId;
+
+    try {
+        // Import Posts model (add this import at the top of your file)
+        // import postsModel from '../models/Posts.js';
+        
+        // Delete all user posts first
+        await postsModel.deleteMany({ userId: userId });
+        
+        // Delete user account
+        await userModel.findByIdAndDelete(userId);
+
+        // Clear authentication cookie
+        res.clearCookie('token', {
+            httpOnly: true, 
+            secure: process.env.NODE_ENV === 'production', 
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
+        });
+
+        return res.json({ success: true, message: 'Account and all posts deleted successfully' });
+
+    } catch (error) {
+        return res.json({ success: false, message: error.message });
+    }
+};
+
 
 export const adminRegister = async (req, res) => {
     const { name, email, password } = req.body;
