@@ -7,13 +7,17 @@ import TrailPost from '../components/TrailPost';
 import CreatePost from '../components/CreatePost';
 import { useAuth } from '../hooks/useAuth';
 import { motion } from 'framer-motion';
+import InteractiveMap from '../components/InteractiveMap';
 
-const Explore = ({ searchValue, setSearchValue, showSearchInNav }) => {
+const Explore = ({ searchValue, setSearchValue, showSearchInNav, isSelected }) => {
   const [scrollY, setScrollY] = useState(0);
   const [isVisible, setIsVisible] = useState({});
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showLocationMap, setShowLocationMap] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
+  const [selectedPost, setSelectedPost] = useState(null);
 
   const { isLoggedIn, authLoading } = useAuth();
 
@@ -140,7 +144,12 @@ const Explore = ({ searchValue, setSearchValue, showSearchInNav }) => {
           <p className="text-xl text-gray-600">Stories from our explorers</p>
         </div>
       </div>
-      <TrailPost />
+      <TrailPost 
+        onMapClick={(post) => {
+          setSelectedPost(post);
+          setShowLocationMap(true);
+        }}
+      />
 
       {/*floating button for create a post*/}
       {!authLoading && isLoggedIn && (
@@ -163,6 +172,17 @@ const Explore = ({ searchValue, setSearchValue, showSearchInNav }) => {
       {/*floating button for create a post*/}
       
       <Footer />
+
+      <InteractiveMap
+        isOpen={showLocationMap}
+        onClose={() => {
+          setShowLocationMap(false);
+          setSelectedPost(null);
+        }}
+        post={selectedPost}
+        userLocation={userLocation}
+        setUserLocation={setUserLocation}
+      />
     </div>
   );
 }
