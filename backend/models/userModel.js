@@ -9,6 +9,13 @@ const userSchema = new mongoose.Schema({
     isVerified: {type: Boolean, default: false},
     resetOtp: {type: String, default: ''},
     resetOtpExpires: {type: Number, default: 0},
+    role: {type: String, enum: ['user', 'admin'], default: 'user'},
+
+    //new
+    createdAt: { type: Date, default: Date.now }, 
+    lastLogin: { type: Date, default: null },   
+    loginCount: { type: Number, default: 0 },
+    isBlocked: { type: Boolean, default: false }
 })
 
 const userModel = mongoose.model.user || mongoose.model('User', userSchema);

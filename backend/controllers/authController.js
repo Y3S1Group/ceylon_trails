@@ -53,6 +53,7 @@ export const register = async (req, res) => {
     }
 }
 
+
 //updated login to fix loading issues (OLD CODE AVAILABLE BELOW)
 export const login = async (req, res) => {
   const { email, password } = req.body;
@@ -78,17 +79,17 @@ export const login = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
     return res.json({
       success: true,
+      role: user.role,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        username: user.username || user.name,
+        username: user.username || user.name
       },
     });
   } catch (error) {
@@ -97,41 +98,6 @@ export const login = async (req, res) => {
   }
 };
 
-// export const login = async (req, res) => {
-//     const {email, password} = req.body;
-
-//     if(!email || !password) {
-//         return res.json({success: false, message: 'Email and Password are required'});
-//     }
-
-//     try {
-//         const user = await userModel.findOne({email});
-//         if(!user){
-//             return res.json({success: false, message: 'Invalid email or password'});
-//         }
-
-//         const isMatch = await bcrypt.compare(password, user.password);
-
-//         if(!isMatch) {
-//             return res.json({success: false, message: 'Invalid email or password'});
-//         }
-
-//         const token = jwt.sign({id: user._id}, process.env.JWT_SECRET, {expiresIn: '7d'});
-
-//         res.cookie('token', token, {httpOnly: true, 
-//                                     secure: process.env.NODE_ENV === 'production', 
-//                                     sameSite: process.env.NODE_ENV === 'production' ? 
-//                                     'none' : 'strict',
-//                                     maxAge: 7 * 24 * 60 * 60 * 1000
-
-//         });
-
-//         return res.json({success: true});
-
-//     } catch(error) {
-//         return res.json({success: false, message: error.message});
-//     }
-// }
 
 export const logout = async (req, res) => {
     try {
@@ -249,3 +215,54 @@ export const getCurrentUser = async (req, res) => {
     return res.status(500).json({ loggedIn: false, user: null });
   }
 };
+
+export const adminRegister = async (req, res) => {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+        return res.json({ success: false, message: "Missing Details" });
+    }
+
+    try {
+        const existingUser = await userModel.findOne({ email });
+        if (existingUser) {
+            return res.json({ success: false, message: "User already exists" });
+        }
+
+        const passwordHash = await bcrypt.hash(password, 10);
+
+        const admin = new userModel({
+            name,
+            email,
+            password: passwordHash,
+            role: "admin", // force admin role
+        });
+        await admin.save();
+
+        const token = jwt.sign({ id: admin._id, role: admin.role }, process.env.JWT_SECRET, {
+            expiresIn: "7d",
+        });
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        // Send admin welcome email
+        const mailOptions = {
+            from: process.env.SENDER_EMAIL,
+            to: email,
+            subject: "Welcome Admin",
+            text: `Hello ${name},\n\nYour admin account has been created successfully.\n\nBest regards,\nYour Service Team`,
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        return res.json({ success: true });
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    }
+};
+

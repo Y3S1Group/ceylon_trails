@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
       if (res.data.success) {
         setIsLoggedIn(true);
         setUser(res.data.user);
-        return { success: true };
+        return { success: true ,role: res.data.role};
       } else {
         return { success: false, message: res.data.message };
       }

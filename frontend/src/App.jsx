@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Profile from './pages/Profile';
 import Saved from './pages/Saved';
+import Dashboard from './pages/AdminDashboard';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 
 function ProtectedRoute({ element }) {
@@ -52,6 +53,10 @@ function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
           <Route path="/saved" element={<ProtectedRoute element={<Saved />} />}/>
+          <Route
+            path="/admin"
+            element={<ProtectedRoute element={<Dashboard />} />}
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
