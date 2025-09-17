@@ -4,6 +4,17 @@ const postsSchema = new mongoose.Schema({
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     caption: { type: String, required: true },
     location: { type: String, required: true },
+    coordinates: {
+        type: {
+            type: String,
+            enum: ['Point'],
+            default: 'Point'
+        },
+        coordinates: {
+            type: [Number],
+            required: true
+        }
+    },
     imageUrls: {
         type: [String],
         required: true,
@@ -35,5 +46,7 @@ const postsSchema = new mongoose.Schema({
         date: { type: Date, default: Date.now }
     }],
 }, { timestamps: true });
+
+postsSchema.index({ coordinates: '2dsphere' });
 
 export default mongoose.model('Posts', postsSchema);
