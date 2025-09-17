@@ -1,27 +1,27 @@
 import { Award, Bookmark, Camera, Clock, Compass, HeartHandshake, MapPin, MessageCircle, Mountain, Share2, Star, ChevronLeft, ChevronRight, Plus, Map } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
 import ImageViewer from './ImageViewer';
+import SavedPost from './SavedPost';
+import { useAuth } from '../hooks/useAuth';
 
 const TrailPost = () => {
+    const { isLoggedIn } = useAuth();
     const [liked, setLiked] = useState({});
     const [bookmarked, setBookmarked] = useState({});
     const [showComments, setShowComments] = useState({});
     const [comment, setComment] = useState('');
     const [modalOpen, setModalOpen] = useState(false);
+    const [selectedPostId, setSelectedPostId] = useState(null);
     const [expandedCaptions, setExpandedCaptions] = useState({});
     const [isCaptionLong, setIsCaptionLong] = useState({});
-
-    // State for backend posts functionality
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
-    
     const [ImageViewerOpen, setImageViewerOpen] = useState(false);
     const [currentImages, setCurrentImages] = useState([]);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
     const captionRefs = useRef({});
 
-    // Load posts from backend
     useEffect(() => {
         const loadPosts = async () => {
             try {
@@ -42,7 +42,6 @@ const TrailPost = () => {
         loadPosts();
     }, []);
 
-    // User display logic
     const getUserDisplayInfo = (userObj) => {
         if (userObj && typeof userObj === 'object' && userObj.name) {
             return {
@@ -86,7 +85,13 @@ const TrailPost = () => {
     };
 
     const toggleBookmark = (postId) => {
-        setBookmarked(prev => ({ ...prev, [postId]: !prev[postId] }));
+        if (isLoggedIn) {
+            setSelectedPostId(postId);
+            setModalOpen(true);
+            setBookmarked(prev => ({ ...prev, [postId]: true }));
+        } else {
+            alert('Please log in to save posts');
+        }
     };
 
     const toggleComments = (postId) => {
@@ -154,7 +159,7 @@ const TrailPost = () => {
                                         </p>
                                     </div>
                                 </div>
-                                <button className='ml-auto px-3 py-1 text-black rounded-xl hover:text-teal-500 '>
+                                <button className='ml-auto px-3 py-1 text-black rounded-xl hover:text-teal-500'>
                                     <Map className='w-5 h-5'/>
                                 </button>
                             </div>
@@ -198,43 +203,113 @@ const TrailPost = () => {
                             )}
                         </div>
 
-                        {/* Post Images - Using TrailPost's original layout style */}
                         {postImages.length > 0 && (
-                            <div className="grid gap-1 px-6">
-                                {postImages.length >= 2 && (
-                                    <div className="grid grid-cols-2 gap-1">
-                                        {postImages.slice(0, 2).map((img, index) => (
+                            <div className="px-6">
+                                {postImages.length === 1 && (
+                                    // Single image - full width with max height
+                                    <div className="mb-3">
+                                        <img
+                                            src={postImages[0]}
+                                            alt="Post image"
+                                            className="w-full max-h-100 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
+                                            onClick={() => openImageViewer(postImages, 0)}
+                                        />
+                                    </div>
+                                )}
+
+                                {postImages.length === 2 && (
+                                    // Two images - single row
+                                    <div className="grid grid-cols-2 gap-1 mb-3">
+                                        {postImages.map((img, index) => (
                                             <img
                                                 key={index}
                                                 src={img}
                                                 alt={`Image ${index + 1}`}
-                                                className="w-full h-60 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
+                                                className="w-full h-80 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
                                                 onClick={() => openImageViewer(postImages, index)}
                                             />
                                         ))}
                                     </div>
                                 )}
-                                {postImages.length === 1 && (
-                                    <div className="grid grid-cols-1 gap-1">
-                                        <img
-                                            src={postImages[0]}
-                                            alt="Post image"
-                                            className="w-full h-60 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
-                                            onClick={() => openModal(postImages[0], postImages, 0)}
-                                        />
+
+                                {postImages.length === 3 && (
+                                    // Three images - 2 in first row, 1 full width in second row
+                                    <div className="space-y-1 mb-3">
+                                        <div className="grid grid-cols-2 gap-1">
+                                            {postImages.slice(0, 2).map((img, index) => (
+                                                <img
+                                                    key={index}
+                                                    src={img}
+                                                    alt={`Image ${index + 1}`}
+                                                    className="w-full h-60 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
+                                                    onClick={() => openImageViewer(postImages, index)}
+                                                />
+                                            ))}
+                                        </div>
+                                        <div>
+                                            <img
+                                                src={postImages[2]}
+                                                alt="Image 3"
+                                                className="w-full h-60 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
+                                                onClick={() => openImageViewer(postImages, 2)}
+                                            />
+                                        </div>
                                     </div>
                                 )}
-                                {postImages.length > 2 && (
-                                    <div className="grid grid-cols-3 gap-1">
-                                        {postImages.slice(2, 5).map((img, index) => (
-                                            <img
-                                                key={index}
-                                                src={img}
-                                                alt={`Image ${index + 3}`}
-                                                className="w-full h-60 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
-                                                onClick={() => openModal(img, postImages, index + 2)}
-                                            />
-                                        ))}
+
+                                {postImages.length === 4 && (
+                                    // Four images - 2 in each row
+                                    <div className="space-y-1 mb-3">
+                                        <div className="grid grid-cols-2 gap-1">
+                                            {postImages.slice(0, 2).map((img, index) => (
+                                                <img
+                                                    key={index}
+                                                    src={img}
+                                                    alt={`Image ${index + 1}`}
+                                                    className="w-full h-60 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
+                                                    onClick={() => openImageViewer(postImages, index)}
+                                                />
+                                            ))}
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-1">
+                                            {postImages.slice(2, 4).map((img, index) => (
+                                                <img
+                                                    key={index}
+                                                    src={img}
+                                                    alt={`Image ${index + 3}`}
+                                                    className="w-full h-60 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
+                                                    onClick={() => openImageViewer(postImages, index + 2)}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {postImages.length === 5 && (
+                                    // Five images - 2 in first row, 3 in second row
+                                    <div className="space-y-1 mb-3">
+                                        <div className="grid grid-cols-2 gap-1">
+                                            {postImages.slice(0, 2).map((img, index) => (
+                                                <img
+                                                    key={index}
+                                                    src={img}
+                                                    alt={`Image ${index + 1}`}
+                                                    className="w-full h-60 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
+                                                    onClick={() => openImageViewer(postImages, index)}
+                                                />
+                                            ))}
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-1">
+                                            {postImages.slice(2, 5).map((img, index) => (
+                                                <img
+                                                    key={index}
+                                                    src={img}
+                                                    alt={`Image ${index + 3}`}
+                                                    className="w-full h-60 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
+                                                    onClick={() => openImageViewer(postImages, index + 2)}
+                                                />
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -253,7 +328,7 @@ const TrailPost = () => {
                                     >
                                         <HeartHandshake className={`w-5 h-5 ${liked[post._id] ? 'fill-current' : ''}`} />
                                         <span className="text-sm font-medium">
-                                            {liked[post._id] ? 'Finds Helpfull' : 'Helpfull'} ({(post.likes?.length || 0) + (liked[post._id] ? 1 : 0)})
+                                            {liked[post._id] ? 'Finds Helpful' : 'Helpful'} ({(post.likes?.length || 0) + (liked[post._id] ? 1 : 0)})
                                         </span>
                                     </button>
                                     <button
@@ -269,7 +344,8 @@ const TrailPost = () => {
                                             bookmarked[post._id]
                                                 ? 'text-yellow-500 bg-yellow-50'
                                                 : 'text-gray-600 hover:text-yellow-500 hover:bg-yellow-50'
-                                        }`}
+                                        } ${!isLoggedIn ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        disabled={!isLoggedIn}
                                     >
                                         <Bookmark className={`w-5 h-5 ${bookmarked[post._id] ? 'fill-current' : ''}`} />
                                         <span className="text-sm font-medium">Save</span>
@@ -284,7 +360,6 @@ const TrailPost = () => {
                             </div>
                         </div>
 
-                        {/* Comments Section */}
                         {showComments[post._id] && (
                             <div className="px-6 pb-6 border-t border-gray-100">
                                 <div className="space-y-4 mt-4">
@@ -316,7 +391,6 @@ const TrailPost = () => {
                 );
             })}
 
-            {/* Modal for image viewing */}
             <ImageViewer
                 isOpen={ImageViewerOpen}
                 images={currentImages}
@@ -324,6 +398,12 @@ const TrailPost = () => {
                 onClose={closeImageViewer}
                 onNext={nextImage}
                 onPrev={prevImage}
+            />
+
+            <SavedPost
+                isOpen={modalOpen}
+                onClose={() => setModalOpen(false)}
+                postId={selectedPostId}
             />
         </div>
     );
