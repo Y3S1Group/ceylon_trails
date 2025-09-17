@@ -127,12 +127,12 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
                 throw new Error('Please select a location from suggestions');
             }
 
-            const tags = postData.tags.trim() ? 
+            /*const tags = postData.tags.trim() ? 
                 postData.tags.split(/[,]+/)  
                     .map(tag => tag.trim().replace(/^#/, ''))
                     .filter(tag => tag.length > 0)
                     .slice(0, 10)
-                : [];
+                : [];*/
 
             if (tags.length > 10) {
                 throw new Error('Maximum 10 tags allowed');
