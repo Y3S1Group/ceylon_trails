@@ -6,6 +6,7 @@ import connectDB from "./config/database.js";
 import postRoutes from "./routes/postRoutes.js"
 import authRouter from './routes/authRoutes.js';
 import savedRoutes from './routes/savedRoutes.js';
+import adminRouter from './routes/adminRoute.js'
 import { cloudinaryErrorHandler, cloudinaryTestHandler, validateCloudinaryOnStartup } from './config/cloudinary.js';
 import { handleFileUpload } from './middleware/fileUpload.js';
 
@@ -41,6 +42,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/saved', savedRoutes);
+app.use('/api/admin', adminRouter);
 app.get('/api/test/cloudinary', cloudinaryTestHandler);
 app.use('/api/posts', (req, res, next) => {
     if (req.method === 'POST' || req.method === 'PUT') {
