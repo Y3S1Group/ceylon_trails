@@ -9,13 +9,15 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
     const [postData, setPostData] = useState({
         content: '',
         location: '',
-        tags: '',
         visibility: 'Public'
     });
+
 
     const [locationSuggestions, setLocationSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedCoordinates, setSelectedCoordinates] = useState(null);
+    const [tagInput, setTagInput] = useState('');
+    const [tags, setTags] = useState([]);
     const [uploadedImages, setUploadedImages] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -50,6 +52,52 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
         setUploadedImages(prev => prev.filter(img => img.id !== id));
     };
 
+    const handleTagInputChange = (e) => {
+        const value = e.target.value;
+        setTagInput(value);
+
+        // Check if user pressed space or comma
+        if (value.endsWith(' ') || value.endsWith(',')) {
+            addTag();
+        }
+    };
+
+    const handleTagKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addTag();
+        } else if (e.key === 'Backspace' && tagInput === '' && tags.length > 0) {
+            // Remove last tag if input is empty and user presses backspace
+            removeTag(tags.length - 1);
+        }
+    };
+
+    const addTag = () => {
+        const trimmedInput = tagInput.trim().replace(/[,\s]+$/, ''); // Remove trailing spaces and commas
+        if (trimmedInput === '') {
+            setTagInput('');
+            return;
+        }
+
+        // Remove # if present and clean the tag
+        const cleanTag = trimmedInput.replace(/^#+/, '').trim();
+        
+        if (cleanTag && cleanTag.length > 0 && tags.length < 10) {
+            // Check if tag already exists (case insensitive)
+            const tagExists = tags.some(tag => tag.toLowerCase() === cleanTag.toLowerCase());
+            
+            if (!tagExists) {
+                setTags(prev => [...prev, cleanTag]);
+            }
+        }
+        
+        setTagInput('');
+    };
+
+    const removeTag = (indexToRemove) => {
+        setTags(prev => prev.filter((_, index) => index !== indexToRemove));
+    };
+
     const handleSubmit = async () => {
         setError('');
         setLoading(true);
@@ -74,6 +122,7 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
             if (uploadedImages.length > 5) {
                 throw new Error('Maximum 5 images allowed');
             }
+
             if (!selectedCoordinates || !selectedCoordinates.lat || !selectedCoordinates.lon) {
                 throw new Error('Please select a location from suggestions');
             }
@@ -85,18 +134,14 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
                     .slice(0, 10)
                 : [];
 
-            console.log('=== TAG DEBUG ===');
-            console.log('Input string:', `"${postData.tags}"`);
-            console.log('After trim:', `"${postData.tags.trim()}"`);
-            console.log('Split result:', postData.tags.split(/[,\s]+/));
-            console.log('Final tags array:', tags);
-            console.log('Count:', tags.length);
-            console.log('===============');
-
             if (tags.length > 10) {
                 throw new Error('Maximum 10 tags allowed');
             }
 
+            console.log('=== TAG DEBUG ===');
+            console.log('Final tags array:', tags);
+            console.log('Count:', tags.length);
+            console.log('===============');
             
             const formData = new FormData();
             formData.append('userId', user?.id || user?._id);
@@ -127,9 +172,10 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
             setPostData({
                 content: '',
                 location: '',
-                tags: '',
                 visibility: 'Public'
             });
+            setTags([]);
+            setTagInput('');
             setUploadedImages([]);
             
             if (onPostCreated) {
@@ -301,38 +347,67 @@ const CreatePost = ({ isOpen, onClose, onPostCreated }) => {
 
                             {/* Add Tags */}
                             <div>
-                                <label className="block text-sm font-medium text-black mb-2">Add Tags</label>
+                                <label className="block text-sm font-medium text-black mb-2">
+                                    Add Tags ({tags.length}/10)
+                                </label>
                                 <div className="relative">
-                                    <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                    <Hash className="absolute left-3 top-3 w-4 h-4 text-gray-500" />
                                     <input
                                         type="text"
-                                        value={postData.tags}
-                                        onChange={(e) => setPostData({ ...postData, tags: e.target.value })}
-                                        placeholder="Add tags..."
-                                        className="w-full pl-9 pr-24 p-2.5 bg-gray-200 border border-gray-500 rounded-xl text-black placeholder-gray-500 focus:border-teal-700 focus:ring-1 focus:ring-teal-400/40 focus:outline-none transition-all duration-200 text-sm"
+                                        value={tagInput}
+                                        onChange={handleTagInputChange}
+                                        onKeyDown={handleTagKeyDown}
+                                        placeholder="Type a tag and press space..."
+                                        className="w-full pl-9 p-2.5 bg-gray-200 border border-gray-500 rounded-xl text-black placeholder-gray-500 focus:border-teal-700 focus:ring-1 focus:ring-teal-400/40 focus:outline-none transition-all duration-200 text-sm"
+                                        disabled={tags.length >= 10}
                                     />
                                 </div>
-                                <p className="text-xs text-gray-500 mt-1">Separate tags with commas</p>
+                                
+                                {/* Tag Chips Display */}
+                                {tags.length > 0 && (
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {tags.map((tag, index) => (
+                                            <div
+                                                key={index}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-teal-100 text-teal-800 rounded-full text-xs font-medium border border-teal-200"
+                                            >
+                                                <span>#{tag}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeTag(index)}
+                                                    className="ml-1 w-3 h-3 rounded-full bg-teal-200 hover:bg-red-200 hover:text-red-600 flex items-center justify-center transition-all duration-150"
+                                                >
+                                                    <X className="w-2 h-2" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Type a tag and press space or enter to add it. Press backspace to remove the last tag.
+                                </p>
                             </div>
+                            
                             <div className='flex-1'></div>
                             <div className='flex justify-end'>
                                 <div className='relative group'>
                                     <button
                                         onClick={handleSubmit}
                                         disabled={loading || !postData.content.trim() || !postData.location.trim() || uploadedImages.length === 0}
-                                        className="group flex items-center justify-center gap-2 px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-teal-600/25 text-sm active:scale-95"
-                                        >
-                                           {loading ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                        Posting...
-                                    </>
-                                ) : (
-                                    <>
-                                        Share Post
-                                        <Send className="w-4 h-4 transform transition-transform duration-300 group-hover:translate-x-1 group-active:-rotate-45" />
-                                    </>
-                                )}
+                                        className="group flex items-center justify-center gap-2 px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-teal-600/25 text-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {loading ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                Posting...
+                                            </>
+                                        ) : (
+                                            <>
+                                                Share Post
+                                                <Send className="w-4 h-4 transform transition-transform duration-300 group-hover:translate-x-1 group-active:-rotate-45" />
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </div>
