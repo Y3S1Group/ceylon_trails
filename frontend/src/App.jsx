@@ -6,13 +6,14 @@ import Feed from './pages/Feed';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Profile from './pages/Profile';
+import Saved from './pages/Saved';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 
 function ProtectedRoute({ element }) {
   const { isLoggedIn, authLoading } = useAuth();
 
   if (authLoading) {
-    return <div>Loading...</div>; // ✅ wait until we know auth status
+    return <div>Loading...</div>;
   }
 
   return isLoggedIn ? element : <Navigate to="/login" />;
@@ -50,6 +51,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
+          <Route path="/saved" element={<ProtectedRoute element={<Saved />} />}/>
         </Routes>
       </BrowserRouter>
     </AuthProvider>
