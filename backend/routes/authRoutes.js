@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, logout, sendVerifyOtp, verifyEmail, getCurrentUser, adminRegister} from '../controllers/authController.js';
+import { register, login, logout, sendVerifyOtp, verifyEmail, getCurrentUser, updateProfile, deleteProfile, adminRegister } from '../controllers/authController.js';
 import { getUserPosts } from '../controllers/postController.js'
 import userAuth from '../middleware/userauth.js';
 
@@ -14,5 +14,8 @@ authRouter.get('/get-current-user', userAuth, getCurrentUser);
 authRouter.get('/:userId/posts', getUserPosts);
 authRouter.post('/admin-register', adminRegister);
 
+// NEW: Profile management routes
+authRouter.put('/update-profile', userAuth, updateProfile);
+authRouter.delete('/delete-profile', userAuth, deleteProfile);
 
 export default authRouter;
