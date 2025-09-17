@@ -2,7 +2,7 @@ import { Award, Bookmark, Camera, Clock, Compass, HeartHandshake, MapPin, Messag
 import React, { useState, useRef, useEffect } from 'react';
 import ImageViewer from './ImageViewer';
 
-const TrailPost = () => {
+const TrailPost = ({ onMapClick }) => {
     const [liked, setLiked] = useState({});
     const [bookmarked, setBookmarked] = useState({});
     const [showComments, setShowComments] = useState({});
@@ -154,7 +154,13 @@ const TrailPost = () => {
                                         </p>
                                     </div>
                                 </div>
-                                <button className='ml-auto px-3 py-1 text-black rounded-xl hover:text-teal-500 '>
+                                <button
+                                    onClick={() => {
+                                        if (onMapClick) {
+                                            onMapClick(post);
+                                        }
+                                    }}
+                                     className='ml-auto px-3 py-1 text-black rounded-xl hover:text-teal-500 '>
                                     <Map className='w-5 h-5'/>
                                 </button>
                             </div>
