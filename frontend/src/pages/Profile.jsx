@@ -5,9 +5,13 @@ import Footer from '../components/Footer';
 import { useAuth } from '../hooks/useAuth';
 import ImageViewer from '../components/ImageViewer';
 import LocationInput from '../components/LocationInput';
+import UpdateProfile from '../components/UpdateProfile';
 
 const Profile = () => {
   const { user: currentUser, authLoading, isLoggedIn, logout } = useAuth();
+
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showDeleteProfileConfirm, setShowDeleteProfileConfirm] = useState(false);
 
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -251,6 +255,26 @@ const Profile = () => {
     }
   };
 
+  const handleDeleteProfile = async () => {
+    try {
+      const response = await fetch(`http://localhost:5006/api/auth/delete-profile`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        alert('Profile deleted successfully!');
+        window.location.href = '/'; // Redirect to homepage
+      } else {
+        const data = await response.json();
+        alert(data.message || 'Failed to delete profile');
+      }
+    } catch (err) {
+      console.error('Error deleting profile:', err);
+    }
+  };
+
+
   const openImageViewer = (images, index = 0) => {
     const imageUrls = images.map(img => (typeof img === 'string' ? img : img.url));
     setImageViewer({
@@ -368,20 +392,20 @@ const Profile = () => {
                     {currentUser.bio || "Exploring the world, one trail at a time 🌍✨"}
                   </p>
 
-                  {/* Meta Info */}
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-800 mb-4">
-                    <div className="flex items-center">
-                      <MapPin className="w-4 h-4 mr-1" />
-                      {currentUser.location || "Earth"}
-                    </div>
-                    <div className="flex items-center">
-                      <ExternalLink className="w-4 h-4 mr-1" />
-                      {currentUser.website || "No website"}
-                    </div>
-                    <div className="flex items-center">
-                      <Clock className="w-4 h-4 mr-1" />
-                      Joined {currentUser.joinDate || "Recently"}
-                    </div>
+                  <div className="flex gap-3 mt-3">
+                    <button
+                      onClick={() => setShowEditProfile(true)}
+                      className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm transition-colors"
+                    >
+                      Edit Profile
+                    </button>
+
+                    <button
+                      onClick={() => setShowDeleteProfileConfirm(true)}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors"
+                    >
+                      Delete Profile
+                    </button>
                   </div>
                 </div>
               </div>
@@ -855,7 +879,40 @@ const Profile = () => {
           onNext={nextImage}
           onPrev={prevImage}
         />
-      </div> 
+        {showEditProfile && (
+          <UpdateProfile
+            isOpen={showEditProfile}
+            onClose={() => setShowEditProfile(false)}
+            onProfileUpdated={() => window.location.reload()}
+          />
+        )}
+
+        {showDeleteProfileConfirm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Delete Profile</h3>
+              <p className="text-gray-600 mb-6">Are you sure you want to delete your profile? This action cannot be undone.</p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowDeleteProfileConfirm(false)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteProfile}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+
+      </div>
+       
       <Footer/>
     </>
   );
