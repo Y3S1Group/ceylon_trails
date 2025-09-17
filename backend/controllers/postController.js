@@ -12,7 +12,7 @@ export const createPost = async (req, res) => {
         console.log('Request files:', req.files);
         console.log('========================');
 
-        const { userId, caption, location, tags } = req.body;
+        const { userId, caption, location, tags, coordinates } = req.body;
 
         if (!userId) {
             return res.status(400).json({
@@ -49,6 +49,27 @@ export const createPost = async (req, res) => {
             });
         }
 
+        let parsedCoordinates = null;
+        if (coordinates) {
+        try {
+            const coords = typeof coordinates === 'string'
+                 ? JSON.parse(coordinates) : coordinates;
+
+            if (coords.lat && coords.lon) {
+                parsedCoordinates = { type: 'Point', coordinates: [coords.lon, coords.lat] };
+            }
+        } catch (e) {
+            console.error('Error parsing coordinates:', e);
+        }
+        }
+
+        if (!parsedCoordinates) {
+            return res.status(400).json({
+                success: false,
+                message: 'Valid coordinates are required'
+            });
+        }
+
         let processedTags = [];
         if (tags) {
             try {
@@ -80,15 +101,18 @@ export const createPost = async (req, res) => {
             location: location.trim(), 
             imageUrls, 
             cloudinaryPublicIds: publicIds,
-            tags: processedTags
+            tags: processedTags,
+            coordinates: parsedCoordinates
         });
 
         console.log('Saving post to database...');
         const savedPost = await newPost.save();
         console.log('Post saved:', savedPost._id);
+
         const populatedPost = await Posts.findById(savedPost._id)
             .populate('userId', 'username email')
             .populate('comments.userId', 'username email');
+
         res.status(201).json({
             success: true,
             message: 'Post created successfully',
@@ -108,7 +132,7 @@ export const createPost = async (req, res) => {
 export const updatePost = async (req, res) => {
     try {
         const { postId } = req.params;
-        const { caption, location, userId, existingImages, tags } = req.body;
+        const { caption, location, userId, existingImages, tags, coordinates } = req.body;
 
         const post = await Posts.findById(postId);
         
@@ -130,6 +154,27 @@ export const updatePost = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: 'Caption and location are required'
+            });
+        }
+
+        let parsedCoordinates = post.coordinates;
+        if (coordinates) {
+            try {
+                const coords = typeof coordinates === 'string' 
+                    ? JSON.parse(coordinates) : coordinates;
+                    
+                if (coords.lat && coords.lon) {
+                    parsedCoordinates = { type: 'Point', coordinates: [coords.lon, coords.lat] };
+                }
+            } catch (e) {
+                console.error('Error parsing coordinates in update:', e);
+            }
+        }
+
+        if (location !== post.location && !parsedCoordinates) {
+            return res.status(400).json({
+                success: false,
+                message: 'Valid coordinates are required when updating location'
             });
         }
 
@@ -213,6 +258,7 @@ export const updatePost = async (req, res) => {
         const updateData = {
             caption,
             location,
+            coordinates: parsedCoordinates,
             imageUrls: finalImageUrls,
             cloudinaryPublicIds: finalPublicIds,
             tags: processedTags,
