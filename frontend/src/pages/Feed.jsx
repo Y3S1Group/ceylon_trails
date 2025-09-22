@@ -34,7 +34,7 @@ const Feed = () => {
   return (
     <div className="pt-30">
       <Navbar />
-      <div className="flex items-center justify-between mb-0 pl-50 pr-50">
+      <div className="flex items-center justify-between mb-0 pl-20 pr-20">
         <div>
           <h2 className="text-4xl font-bold text-gray-900 mb-2">Your Feed</h2>
           <p className="text-xl text-gray-600">Stories from our explorers</p>

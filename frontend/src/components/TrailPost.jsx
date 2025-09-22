@@ -1,29 +1,20 @@
-import { Award, Bookmark, Camera, Clock, Compass, HeartHandshake, MapPin, MessageCircle, Mountain, Share2, Star, ChevronLeft, ChevronRight, Plus, Map } from 'lucide-react';
+import { Award, Bookmark, Camera, Clock, Compass, HeartHandshake, MapPin, MessageCircle, Mountain, Share2, Star, ChevronLeft, ChevronRight, Plus, Map, Eye } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
-import ImageViewer from './ImageViewer';
+import FullPostView from './FullPostView';
 import SavedPost from './SavedPost';
 import { useAuth } from '../hooks/useAuth';
 
-
 const TrailPost = ({ onMapClick }) => {
-
     const { isLoggedIn } = useAuth();
 
-    const [liked, setLiked] = useState({});
-    const [bookmarked, setBookmarked] = useState({});
-    const [showComments, setShowComments] = useState({});
-    const [comment, setComment] = useState('');
-    const [modalOpen, setModalOpen] = useState(false);
-    const [selectedPostId, setSelectedPostId] = useState(null);
-    const [expandedCaptions, setExpandedCaptions] = useState({});
-    const [isCaptionLong, setIsCaptionLong] = useState({});
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [ImageViewerOpen, setImageViewerOpen] = useState(false);
-    const [currentImages, setCurrentImages] = useState([]);
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
-    const captionRefs = useRef({});
+    const [selectedPost, setSelectedPost] = useState(null);
+    const [showFullPost, setShowFullPost] = useState(false);
+    const [liked, setLiked] = useState({});
+    const [bookmarked, setBookmarked] = useState({});
+    const [modalOpen, setModalOpen] = useState(false);
+    const [selectedPostId, setSelectedPostId] = useState(null);
 
     useEffect(() => {
         const loadPosts = async () => {
@@ -59,35 +50,28 @@ const TrailPost = ({ onMapClick }) => {
         };
     };
 
-    const openImageViewer = (postImages, index) => {
-        setCurrentImages(postImages);
-        setCurrentImageIndex(index);
-        setImageViewerOpen(true);
+    const openFullPost = (post) => {
+        setSelectedPost(post);
+        setShowFullPost(true);
     };
 
-    const closeImageViewer = () => {
-        setImageViewerOpen(false);
-        setCurrentImages([]);
-        setCurrentImageIndex(0);
+    const closeFullPost = () => {
+        setShowFullPost(false);
+        setSelectedPost(null);
     };
 
-    const nextImage = () => {
-        setCurrentImageIndex((prev) => (prev + 1) % currentImages.length);
+    const truncateText = (text, maxLength = 100) => {
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
     };
 
-    const prevImage = () => {
-        setCurrentImageIndex((prev) => (prev - 1 + currentImages.length) % currentImages.length);
-    };
-
-    const toggleCaption = (postId) => {
-        setExpandedCaptions(prev => ({ ...prev, [postId]: !prev[postId] }));
-    };
-
-    const toggleLike = (postId) => {
+    const toggleLike = (postId, e) => {
+        e.stopPropagation();
         setLiked(prev => ({ ...prev, [postId]: !prev[postId] }));
     };
 
-    const toggleBookmark = (postId) => {
+    const toggleBookmark = (postId, e) => {
+        e.stopPropagation();
         if (isLoggedIn) {
             setSelectedPostId(postId);
             setModalOpen(true);
@@ -97,33 +81,8 @@ const TrailPost = ({ onMapClick }) => {
         }
     };
 
-    const toggleComments = (postId) => {
-        setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }));
-    };
-
-    useEffect(() => {
-        const checkCaptionHeight = () => {
-            const updatedIsCaptionLong = {};
-            posts.forEach(post => {
-                const element = captionRefs.current[post._id];
-                if (element) {
-                    const lineHeight = parseFloat(getComputedStyle(element).lineHeight);
-                    const maxHeight = lineHeight * 2;
-                    updatedIsCaptionLong[post._id] = element.scrollHeight > maxHeight;
-                }
-            });
-            setIsCaptionLong(updatedIsCaptionLong);
-        };
-
-        if (posts.length > 0) {
-            checkCaptionHeight();
-            window.addEventListener('resize', checkCaptionHeight);
-            return () => window.removeEventListener('resize', checkCaptionHeight);
-        }
-    }, [posts]);
-
     return (
-        <div className="max-w-5xl mx-auto px-6 py-20">
+        <div className="max-w-7xl mx-auto px-8 py-10 ">
             {loading && (
                 <div className="flex justify-center items-center py-20">
                     <div className="w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
@@ -138,279 +97,146 @@ const TrailPost = ({ onMapClick }) => {
                 </div>
             )}
 
-            {!loading && posts.map((post) => {
-                const userInfo = getUserDisplayInfo(post.userId);
-                const postImages = post.imageUrls || [];
-                
-                return (
-                    <div key={post._id} className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8 hover:shadow-xl transition-all duration-300">
-                        <div className="p-6 border-b border-gray-100">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-4">
-                                    <div className="relative">
-                                        <div className="w-12 h-12 bg-gradient-to-br from-teal-600 to-teal-700 rounded-full flex items-center justify-center text-white font-semibold">
+            {!loading && posts.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {posts.map((post) => {
+                        const userInfo = getUserDisplayInfo(post.userId);
+                        const postImages = post.imageUrls || [];
+                        const previewImage = postImages.length > 0 ? postImages[0] : null;
+                        
+                        return (
+                            <div 
+                                key={post._id} 
+                                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                                onClick={() => openFullPost(post)}
+                            >
+                                {/* Image Preview */}
+                                <div className="relative">
+                                    {previewImage ? (
+                                        <div className="relative">
+                                            <img
+                                                src={previewImage}
+                                                alt="Post preview"
+                                                className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                                            />
+                                            {postImages.length > 1 && (
+                                                <div className="absolute top-2 right-2 bg-black/60 bg-opacity-70 text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1">
+                                                    <Camera className="w-3 h-3" />
+                                                    <span>{postImages.length}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="w-full h-48 bg-gradient-to-br from-teal-100 to-teal-200 flex items-center justify-center">
+                                            <Mountain className="w-12 h-12 text-teal-600" />
+                                        </div>
+                                    )}
+                                    
+                                    {/* Overlay on hover */}
+                                    <div className="absolute inset-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white rounded-full p-2">
+                                            <Eye className="w-5 h-5 text-gray-700" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Content */}
+                                <div className="p-4">
+                                    {/* User Info */}
+                                    <div className="flex items-center space-x-3 mb-3">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-700 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                                             {userInfo.avatar}
                                         </div>
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center space-x-2 mb-1">
-                                            <h3 className="font-semibold text-gray-900">{userInfo.name}</h3>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-semibold text-gray-900 text-sm truncate">{userInfo.name}</p>
+                                            <div className="flex items-center text-xs text-gray-500">
+                                                <MapPin className="w-3 h-3 mr-1" />
+                                                <span className="truncate">{post.location}</span>
+                                            </div>
                                         </div>
-                                        <p className="text-gray-500 text-sm flex items-center">
-                                            <Clock className="w-4 h-4 mr-1" />
-                                            {new Date(post.createdAt).toLocaleDateString()} • <MapPin className="w-4 h-4 ml-2 mr-1" /> {post.location}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (onMapClick) {
+                                                    onMapClick(post);
+                                                }
+                                            }}
+                                            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                                        >
+                                            <Map className="w-4 h-4 text-gray-600 hover:text-teal-600" />
+                                        </button>
+                                    </div>
+
+                                    {/* Caption */}
+                                    <div className="mb-3">
+                                        <p className="text-gray-700 text-sm line-clamp-3 leading-relaxed">
+                                            {truncateText(post.caption, 120)}
                                         </p>
                                     </div>
-                                </div>
 
-                                <button
-                                    onClick={() => {
-                                        if (onMapClick) {
-                                            onMapClick(post);
-                                        }
-                                    }}
-                                     className='ml-auto px-3 py-1 text-black rounded-xl hover:text-teal-500 '>
-
-                                    <Map className='w-5 h-5'/>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="p-6">
-                            <div className="relative">
-                                <p
-                                    ref={(el) => (captionRefs.current[post._id] = el)}
-                                    className={`text-gray-700 leading-relaxed ${
-                                        expandedCaptions[post._id] ? '' : 'line-clamp-2'
-                                    }`}
-                                >
-                                    {post.caption}
-                                </p>
-                                {isCaptionLong[post._id] && !expandedCaptions[post._id] && (
-                                    <button
-                                        onClick={() => toggleCaption(post._id)}
-                                        className="text-teal-600 hover:text-teal-800 text-sm font-medium"
-                                    >
-                                        See more...
-                                    </button>
-                                )}
-                                {expandedCaptions[post._id] && (
-                                    <button
-                                        onClick={() => toggleCaption(post._id)}
-                                        className="text-teal-600 hover:text-teal-800 text-sm font-medium"
-                                    >
-                                        See less
-                                    </button>
-                                )}
-                            </div>
-                            {post.tags && post.tags.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mb-0 mt-4">
-                                    {post.tags.map((tag, index) => (
-                                        <span key={index} className="bg-teal-100 px-2.5 py-0.5 rounded-full text-black/70 text-sm font-medium">
-                                            #{tag}
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {postImages.length > 0 && (
-                            <div className="px-6">
-                                {postImages.length === 1 && (
-                                    // Single image - full width with max height
-                                    <div className="mb-3">
-                                        <img
-                                            src={postImages[0]}
-                                            alt="Post image"
-                                            className="w-full max-h-100 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
-                                            onClick={() => openImageViewer(postImages, 0)}
-                                        />
-                                    </div>
-                                )}
-
-                                {postImages.length === 2 && (
-                                    // Two images - single row
-                                    <div className="grid grid-cols-2 gap-1 mb-3">
-                                        {postImages.map((img, index) => (
-                                            <img
-                                                key={index}
-                                                src={img}
-                                                alt={`Image ${index + 1}`}
-                                                className="w-full h-80 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
-                                                onClick={() => openImageViewer(postImages, index)}
-                                            />
-                                        ))}
-                                    </div>
-                                )}
-
-                                {postImages.length === 3 && (
-                                    // Three images - 2 in first row, 1 full width in second row
-                                    <div className="space-y-1 mb-3">
-                                        <div className="grid grid-cols-2 gap-1">
-                                            {postImages.slice(0, 2).map((img, index) => (
-                                                <img
-                                                    key={index}
-                                                    src={img}
-                                                    alt={`Image ${index + 1}`}
-                                                    className="w-full h-60 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
-                                                    onClick={() => openImageViewer(postImages, index)}
-                                                />
+                                    {/* Tags */}
+                                    {post.tags && post.tags.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mb-3">
+                                            {post.tags.slice(0, 3).map((tag, index) => (
+                                                <span key={index} className="bg-teal-100 px-2 py-0.5 rounded-full text-black/70 text-xs font-medium">
+                                                    #{tag}
+                                                </span>
                                             ))}
+                                            {post.tags.length > 3 && (
+                                                <span className="text-xs text-gray-500 px-2 py-0.5">
+                                                    +{post.tags.length - 3} more
+                                                </span>
+                                            )}
                                         </div>
-                                        <div>
-                                            <img
-                                                src={postImages[2]}
-                                                alt="Image 3"
-                                                className="w-full h-60 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
-                                                onClick={() => openImageViewer(postImages, 2)}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
+                                    )}
 
-                                {postImages.length === 4 && (
-                                    // Four images - 2 in each row
-                                    <div className="space-y-1 mb-3">
-                                        <div className="grid grid-cols-2 gap-1">
-                                            {postImages.slice(0, 2).map((img, index) => (
-                                                <img
-                                                    key={index}
-                                                    src={img}
-                                                    alt={`Image ${index + 1}`}
-                                                    className="w-full h-60 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
-                                                    onClick={() => openImageViewer(postImages, index)}
-                                                />
-                                            ))}
+                                    {/* Stats and Actions */}
+                                    <div className="flex items-center justify-between text-xs text-gray-500 border-t border-gray-100 pt-3">
+                                        <div className="flex items-center space-x-3">
+                                            <button
+                                                onClick={(e) => toggleLike(post._id, e)}
+                                                className={`flex items-center space-x-1 px-2 py-1 rounded-full transition-all ${
+                                                    liked[post._id]
+                                                        ? 'text-red-500 bg-red-50'
+                                                        : 'text-gray-600 hover:text-red-500 hover:bg-red-50'
+                                                }`}
+                                            >
+                                                <HeartHandshake className={`w-3 h-3 ${liked[post._id] ? 'fill-current' : ''}`} />
+                                                <span>{(post.likes?.length || 0) + (liked[post._id] ? 1 : 0)}</span>
+                                            </button>
+                                            <button
+                                                onClick={(e) => toggleBookmark(post._id, e)}
+                                                className={`flex items-center space-x-1 px-2 py-1 rounded-full transition-all ${
+                                                    bookmarked[post._id]
+                                                        ? 'text-yellow-500 bg-yellow-50'
+                                                        : 'text-gray-600 hover:text-yellow-500 hover:bg-yellow-50'
+                                                } ${!isLoggedIn ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                disabled={!isLoggedIn}
+                                            >
+                                                <Bookmark className={`w-3 h-3 ${bookmarked[post._id] ? 'fill-current' : ''}`} />
+                                            </button>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-1">
-                                            {postImages.slice(2, 4).map((img, index) => (
-                                                <img
-                                                    key={index}
-                                                    src={img}
-                                                    alt={`Image ${index + 3}`}
-                                                    className="w-full h-60 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
-                                                    onClick={() => openImageViewer(postImages, index + 2)}
-                                                />
-                                            ))}
+                                        <div className="flex items-center space-x-1">
+                                            <Clock className="w-3 h-3" />
+                                            <span>{new Date(post.createdAt).toLocaleDateString()}</span>
                                         </div>
-                                    </div>
-                                )}
-
-                                {postImages.length === 5 && (
-                                    // Five images - 2 in first row, 3 in second row
-                                    <div className="space-y-1 mb-3">
-                                        <div className="grid grid-cols-2 gap-1">
-                                            {postImages.slice(0, 2).map((img, index) => (
-                                                <img
-                                                    key={index}
-                                                    src={img}
-                                                    alt={`Image ${index + 1}`}
-                                                    className="w-full h-60 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
-                                                    onClick={() => openImageViewer(postImages, index)}
-                                                />
-                                            ))}
-                                        </div>
-                                        <div className="grid grid-cols-3 gap-1">
-                                            {postImages.slice(2, 5).map((img, index) => (
-                                                <img
-                                                    key={index}
-                                                    src={img}
-                                                    alt={`Image ${index + 3}`}
-                                                    className="w-full h-60 object-cover cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
-                                                    onClick={() => openImageViewer(postImages, index + 2)}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        <div className="p-6 border-t border-gray-100 mt-3">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-6">
-                                    <button
-                                        onClick={() => toggleLike(post._id)}
-                                        className={`flex items-center space-x-2 px-3 py-1 rounded-full transition-all ${
-                                            liked[post._id]
-                                                ? 'text-red-500 bg-red-50'
-                                                : 'text-gray-600 hover:text-red-500 hover:bg-red-50'
-                                        }`}
-                                    >
-                                        <HeartHandshake className={`w-5 h-5 ${liked[post._id] ? 'fill-current' : ''}`} />
-                                        <span className="text-sm font-medium">
-                                            {liked[post._id] ? 'Finds Helpful' : 'Helpful'} ({(post.likes?.length || 0) + (liked[post._id] ? 1 : 0)})
-                                        </span>
-                                    </button>
-                                    <button
-                                        onClick={() => toggleComments(post._id)}
-                                        className="flex items-center space-x-2 px-3 py-1 rounded-full text-gray-600 hover:text-blue-500 hover:bg-blue-50 transition-all"
-                                    >
-                                        <MessageCircle className="w-5 h-5" />
-                                        <span className="text-sm font-medium">Comment ({post.comments?.length || 0})</span>
-                                    </button>
-                                    <button
-                                        onClick={() => toggleBookmark(post._id)}
-                                        className={`flex items-center space-x-2 px-3 py-1 rounded-full transition-all ${
-                                            bookmarked[post._id]
-                                                ? 'text-yellow-500 bg-yellow-50'
-                                                : 'text-gray-600 hover:text-yellow-500 hover:bg-yellow-50'
-                                        } ${!isLoggedIn ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                        disabled={!isLoggedIn}
-                                    >
-                                        <Bookmark className={`w-5 h-5 ${bookmarked[post._id] ? 'fill-current' : ''}`} />
-                                        <span className="text-sm font-medium">Save</span>
-                                    </button>
-                                </div>
-                                <div className="flex items-center space-x-4">
-                                    <div className="flex items-center space-x-2 bg-amber-50 px-3 py-1 rounded-full">
-                                        <Star className="w-4 h-4 fill-current text-amber-500" />
-                                        <span className="font-semibold text-gray-900 text-sm">4.8</span>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        );
+                    })}
+                </div>
+            )}
 
-                        {showComments[post._id] && (
-                            <div className="px-6 pb-6 border-t border-gray-100">
-                                <div className="space-y-4 mt-4">
-                                    <div className="flex items-start space-x-3">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                                            JS
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-sm"><span className="font-semibold">John Silva</span> Amazing photos! How long did the hike take?</p>
-                                            <p className="text-xs text-gray-500 mt-1">2 days ago</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center space-x-3 mt-4">
-                                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                                        {userInfo.avatar}
-                                    </div>
-                                    <input
-                                        type="text"
-                                        placeholder="Write a comment..."
-                                        value={comment}
-                                        onChange={(e) => setComment(e.target.value)}
-                                        className="flex-1 px-4 py-2 bg-gray-50 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    />
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                );
-            })}
-
-            <ImageViewer
-                isOpen={ImageViewerOpen}
-                images={currentImages}
-                currentIndex={currentImageIndex}
-                onClose={closeImageViewer}
-                onNext={nextImage}
-                onPrev={prevImage}
+            {/* Full Post Modal */}
+            <FullPostView
+                post={selectedPost}
+                isOpen={showFullPost}
+                onClose={closeFullPost}
+                onMapClick={onMapClick}
             />
 
+            {/* Save Post Modal */}
             <SavedPost
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}

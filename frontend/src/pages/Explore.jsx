@@ -8,6 +8,7 @@ import CreatePost from '../components/CreatePost';
 import { useAuth } from '../hooks/useAuth';
 import { motion } from 'framer-motion';
 import InteractiveMap from '../components/InteractiveMap';
+import FullPostView from '../components/FullPostView';
 
 const Explore = ({ searchValue, setSearchValue, showSearchInNav, isSelected }) => {
   const [scrollY, setScrollY] = useState(0);
@@ -17,9 +18,22 @@ const Explore = ({ searchValue, setSearchValue, showSearchInNav, isSelected }) =
   const [loading, setLoading] = useState(false);
   const [showLocationMap, setShowLocationMap] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
-  const [selectedPost, setSelectedPost] = useState(null);
 
   const { isLoggedIn, authLoading } = useAuth();
+
+  const [showFullPost, setShowFullPost] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
+
+  // Add handler
+  const handlePostClick = (post) => {
+    setSelectedPost(post);
+    setShowFullPost(true);
+  };
+
+  const closeFullPost = () => {
+    setShowFullPost(false);
+    setSelectedPost(null);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -99,6 +113,7 @@ const Explore = ({ searchValue, setSearchValue, showSearchInNav, isSelected }) =
         searchValue={searchValue}
         setSearchValue={setSearchValue}
         showSearchInNav={showSearchInNav}
+        onPostClick={handlePostClick}
       />
       <div className="py-20 bg-white">
         <div className="max-w-6xl mx-auto px-6">
@@ -138,7 +153,7 @@ const Explore = ({ searchValue, setSearchValue, showSearchInNav, isSelected }) =
           </div>
         </div>
       </div>
-      <div className="flex items-center justify-between pl-60">
+      <div className="flex items-center justify-between pl-18">
         <div>
           <h2 className="text-4xl font-bold text-gray-900 mb-2">Featured Adventures</h2>
           <p className="text-xl text-gray-600">Stories from our explorers</p>
@@ -182,6 +197,17 @@ const Explore = ({ searchValue, setSearchValue, showSearchInNav, isSelected }) =
         post={selectedPost}
         userLocation={userLocation}
         setUserLocation={setUserLocation}
+      />
+
+      {/* Add FullPostView to JSX */}
+      <FullPostView
+        post={selectedPost}
+        isOpen={showFullPost}
+        onClose={closeFullPost}
+        onMapClick={(post) => {
+          setSelectedPost(post);
+          setShowLocationMap(true);
+        }}
       />
     </div>
   );
