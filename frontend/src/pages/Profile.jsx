@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Clock, MapPin, Heart, MessageCircle, Share2, Edit, Trash2, X, Save, Camera, ChevronLeft, ChevronRight, Grid, List, MoreHorizontal, Settings, ExternalLink, Image, Hash, LogOut } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Clock, MapPin, Heart, MessageCircle, Share2, Edit, Trash2, X, Save, Camera, ChevronLeft, ChevronRight, Grid, List, MoreHorizontal, Settings, ExternalLink, Image, Hash, LogOut, User, UserX } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useAuth } from '../hooks/useAuth';
@@ -12,6 +12,7 @@ const Profile = () => {
 
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showDeleteProfileConfirm, setShowDeleteProfileConfirm] = useState(false);
+  const [showKebabMenu, setShowKebabMenu] = useState(false);
 
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -33,6 +34,8 @@ const Profile = () => {
   });
   const [activeTab, setActiveTab] = useState('posts');
   const [viewMode, setViewMode] = useState('grid');
+
+  const kebabMenuRef = useRef(null);
 
   const fetchUserPosts = async (userId) => {
     try {
@@ -59,6 +62,20 @@ const Profile = () => {
       fetchUserPosts(currentUser._id || currentUser.id);
     }
   }, [currentUser]);
+
+  // Close kebab menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (kebabMenuRef.current && !kebabMenuRef.current.contains(event.target)) {
+        setShowKebabMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -274,7 +291,6 @@ const Profile = () => {
     }
   };
 
-
   const openImageViewer = (images, index = 0) => {
     const imageUrls = images.map(img => (typeof img === 'string' ? img : img.url));
     setImageViewer({
@@ -344,14 +360,56 @@ const Profile = () => {
               alt="Cover"
               className="w-full h-full object-cover opacity-35"
             />
-            {/* Logout Button */}
-            <button 
-              onClick={handleLogout}
-              className="absolute top-44 right-10 text-white hover:text-red-600 px-4 py-2 flex items-center gap-2 transition-colors duration-200"
-            >
-              <LogOut className="w-4 h-4" />
-              Logout
-            </button>
+            
+            {/* Kebab Menu */}
+            <div className="absolute top-44 right-10" ref={kebabMenuRef}>
+              <button 
+                onClick={() => setShowKebabMenu(!showKebabMenu)}
+                className="text-white hover:text-gray-300 p-2 rounded-full hover:bg-black/20 transition-colors duration-200 flex items-center justify-center"
+              >
+                <MoreHorizontal className="w-6 h-6" />
+              </button>
+              
+              {/* Dropdown Menu */}
+              {showKebabMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <button
+                    onClick={() => {
+                      setShowEditProfile(true);
+                      setShowKebabMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 flex items-center gap-3 text-sm transition-colors"
+                  >
+                    <User className="w-4 h-4" />
+                    Edit Profile
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setShowDeleteProfileConfirm(true);
+                      setShowKebabMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center gap-3 text-sm transition-colors"
+                  >
+                    <UserX className="w-4 h-4" />
+                    Delete Profile
+                  </button>
+                  
+                  <div className="border-t border-gray-200 my-1"></div>
+                  
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setShowKebabMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 flex items-center gap-3 text-sm transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Profile Info */}
@@ -391,22 +449,6 @@ const Profile = () => {
                   <p className="text-gray-700 mb-4 max-w-2xl">
                     {currentUser.bio || "Exploring the world, one trail at a time 🌍✨"}
                   </p>
-
-                  <div className="flex gap-3 mt-3">
-                    <button
-                      onClick={() => setShowEditProfile(true)}
-                      className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm transition-colors"
-                    >
-                      Edit Profile
-                    </button>
-
-                    <button
-                      onClick={() => setShowDeleteProfileConfirm(true)}
-                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors"
-                    >
-                      Delete Profile
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
@@ -909,7 +951,6 @@ const Profile = () => {
             </div>
           </div>
         )}
-
 
       </div>
        

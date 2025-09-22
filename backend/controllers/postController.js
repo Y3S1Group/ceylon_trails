@@ -441,3 +441,35 @@ export const getPost = async (req, res) => {
         });
     }
 };
+
+export const searchPosts = async (req, res) => {
+  try {
+    const { location, tag } = req.query;
+
+    let filter = {};
+
+    // If user gives a location, use case-insensitive regex
+    if (location) {
+      filter.location = { $regex: location, $options: "i" };
+    }
+
+    // If user gives a tag, search inside tags array
+    if (tag) {
+      filter.tags = { $in: [tag.toLowerCase()] };
+    }
+
+    const posts = await Posts.find(filter)
+      .populate("userId", "name email") // ✅ bring back name + email of post author
+      .populate("comments.userId", "name email") // ✅ also bring back comment authors
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({ success: true, data: posts });
+  } catch (err) {
+    console.error("Error searching posts:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to search posts", 
+      error: err.message 
+    });
+  }
+};
