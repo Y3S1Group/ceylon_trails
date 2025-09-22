@@ -1,7 +1,14 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import connectDB from "./config/database.js";
+import postRoutes from "./routes/postRoutes.js"
+import authRouter from './routes/authRoutes.js';
+import savedRoutes from './routes/savedRoutes.js';
+import adminRouter from './routes/adminRoute.js'
+import { cloudinaryErrorHandler, cloudinaryTestHandler, validateCloudinaryOnStartup } from './config/cloudinary.js';
+import { handleFileUpload } from './middleware/fileUpload.js';
 
 dotenv.config();
 
@@ -10,13 +17,19 @@ const port = process.env.PORT || 5006;
 
 connectDB();
 
-app.use(express.json());
+app.use((req, res, next) => {
+    if (req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
+        next();
+    } else {
+        express.json()(req, res, next);
+    }
+});
 
 app.use (cors({
     origin: process.env.CLIENT_URL || "http://localhost:5173",
     credentials: true,
 }));
-
+app.use(cookieParser());
 app.use((req, res, next) => {
     console.log('Request body before route:',req.body);
     next();
@@ -27,7 +40,19 @@ app.get('/', (req, res) => {
     res.send('Hello, from Server')
 })
 
+app.use('/api/auth', authRouter);
+app.use('/api/saved', savedRoutes);
+app.use('/api/admin', adminRouter);
+app.get('/api/test/cloudinary', cloudinaryTestHandler);
+app.use('/api/posts', (req, res, next) => {
+    if (req.method === 'POST' || req.method === 'PUT') {
+        handleFileUpload(req, res, next);
+    } else {
+        next();
+    }
+}, postRoutes);
 
+app.use(cloudinaryErrorHandler);
 
 app.use((err, req, res, next) => {
     const statusCode = err.statusCode || 500;
@@ -41,4 +66,5 @@ app.use((err, req, res, next) => {
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
+    validateCloudinaryOnStartup();
 })
