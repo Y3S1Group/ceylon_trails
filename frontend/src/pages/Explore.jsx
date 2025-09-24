@@ -169,7 +169,7 @@ const Explore = ({ searchValue, setSearchValue, showSearchInNav, isSelected }) =
       {/*floating button for create a post*/}
       {!authLoading && isLoggedIn && (
         <button
-          className="group fixed bottom-14 right-18 w-14 h-14 bg-teal-600/40 backdrop-blur-xs border border-teal-600 hover:border-teal-800 hover:bg-teal-600/90 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 z-40"
+          className="group fixed bottom-14 right-18 w-14 h-14 bg-teal-600/40 backdrop-blur-xs border border-teal-600 hover:border-teal-800 hover:bg-teal-600/90 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 z-20"
           onClick={() => setShowCreatePost(true)}
           aria-label="Add new post"
         >

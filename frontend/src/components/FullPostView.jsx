@@ -1,11 +1,12 @@
 import { Award, Bookmark, Camera, Clock, Compass, HeartHandshake, MapPin, MessageCircle, Mountain, Share2, Star, ChevronLeft, ChevronRight, Plus, Map, X, Flag, AlertTriangle } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
+import InteractiveMap from './InteractiveMap';
 import ImageViewer from './ImageViewer';
 import ReportModal from './ReportForm';
 import SavedPost from './SavedPost';
 import { useAuth } from '../hooks/useAuth';
 
-const FullPostView = ({ post, isOpen, onClose, onMapClick }) => {
+const FullPostView = ({ post, isOpen, onClose }) => {
     const { isLoggedIn } = useAuth();
 
     const [liked, setLiked] = useState(false);
@@ -22,7 +23,8 @@ const FullPostView = ({ post, isOpen, onClose, onMapClick }) => {
     const [reportReason, setReportReason] = useState('');
     const [reportDescription, setReportDescription] = useState('');
     const [reportSubmitted, setReportSubmitted] = useState(false);
-
+    const [showMapModal, setShowMapModal] = useState(false);
+    const [userLocation, setUserLocation] = useState(null);
     const captionRef = useRef(null);
 
     useEffect(() => {
@@ -161,8 +163,15 @@ const FullPostView = ({ post, isOpen, onClose, onMapClick }) => {
     const userInfo = getUserDisplayInfo(post.userId);
     const postImages = post.imageUrls || [];
 
+    const handleMapClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Map button clicked');
+        setShowMapModal(true);
+    };
+
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-lg z-40 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-lg z-60 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-xl max-w-4xl max-h-[90vh] w-full overflow-y-auto">
                 {/* Header with close button */}
                 <div className="sticky top-0 bg-white border-b border-gray-100 p-4 flex items-center justify-between z-20">
@@ -182,15 +191,12 @@ const FullPostView = ({ post, isOpen, onClose, onMapClick }) => {
                             </p>
                         </div>
                     </div>
-
-                    <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2">
                         <button
-                            onClick={() => {
-                                if (onMapClick) {
-                                    onMapClick(post);
-                                }
-                            }}
-                            className='px-3 py-1 text-black rounded-xl hover:text-teal-500'>
+                            onClick={handleMapClick}
+                            className='px-3 py-1 text-black rounded-xl hover:text-teal-500 hover:bg-teal-50 transition-colors'
+                            title="View location on map"
+                        >
                             <Map className='w-5 h-5'/>
                         </button>
                         <button
@@ -426,6 +432,14 @@ const FullPostView = ({ post, isOpen, onClose, onMapClick }) => {
                         </div>
                     </div>
                 )}
+
+                <InteractiveMap
+                    isOpen={showMapModal}
+                    onClose={() => setShowMapModal(false)}
+                    post={post}
+                    userLocation={userLocation}
+                    setUserLocation={setUserLocation}
+                />
 
                 <ReportModal
                     isOpen={showReportModal}

@@ -376,7 +376,7 @@ export const getFeedPosts = async (req, res) => {
             .populate('userId', 'name email')
             .populate('comments.userId', 'name email')
             .sort({ createdAt: -1 })
-            .limit(5);
+            .limit(10);
         console.log('Found posts:', posts.length);
         res.status(200).json({
             success: true,
@@ -459,8 +459,8 @@ export const searchPosts = async (req, res) => {
     }
 
     const posts = await Posts.find(filter)
-      .populate("userId", "name email") // ✅ bring back name + email of post author
-      .populate("comments.userId", "name email") // ✅ also bring back comment authors
+      .populate("userId", "name email") // bring back name + email of post author
+      .populate("comments.userId", "name email") // also bring back comment authors
       .sort({ createdAt: -1 });
 
     res.status(200).json({ success: true, data: posts });

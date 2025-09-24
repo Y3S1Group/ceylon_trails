@@ -178,7 +178,7 @@ const InteractiveMap = ({ isOpen, onClose, post, userLocation, setUserLocation }
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-80 flex items-center justify-center">
             <div className="relative max-w-5xl max-h-screen p-4 w-full">
 
                 {/* Close Button */}
