@@ -53,7 +53,7 @@ const Navbar = () => {
 
     return (
         <>
-            <div className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${navbarBackground}`}>
+            <div className={`fixed top-0 left-0 w-full z-20 transition-all duration-300 ${navbarBackground}`}>
                 <div className="max-w-7xl mx-auto px-6">
                     <div className="flex items-center justify-between h-16">
                         {/* Logo */}

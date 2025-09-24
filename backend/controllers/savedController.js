@@ -26,9 +26,9 @@ export const createFolder = async (req, res) => {
     }
 };
 
-// Display all saved folders for the user
+// Display all saved folders for the user - FIXED TO INCLUDE ALL POST DATA
 export const getUserFolders = async (req, res) => {
-    const { userId } = req.query; // Use query param for userId
+    const { userId } = req.query;
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
         return res.status(400).json({ success: false, message: 'Valid user ID is required' });
     }
@@ -38,13 +38,19 @@ export const getUserFolders = async (req, res) => {
             .select('name posts createdAt')
             .populate({
                 path: 'posts',
-                select: 'caption imageUrls userId',
-                populate: { path: 'userId', select: 'username profilePic' }
+                // Include ALL necessary fields for the frontend
+                select: 'caption imageUrls userId location createdAt tags likes comments coordinates',
+                populate: { 
+                    path: 'userId', 
+                    // Include both name and username to handle different user models
+                    select: 'username name profilePic' 
+                }
             })
             .sort({ createdAt: -1 });
 
         res.status(200).json({ success: true, folders });
     } catch (error) {
+        console.error('Error fetching folders:', error); // Add logging for debugging
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };

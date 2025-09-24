@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Bot, User, RotateCcw, MapPin, Heart, MessageCircle, BotMessageSquare, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+
 const PostCard = ({ post, onPostClick }) => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -304,10 +305,7 @@ const ChatBot = ({ isOpen, onClose, initialPrompt = "", onPostSelect, onPostClic
   };
 
   const handlePostClick = (post) => {
-    console.log("Post clicked:", post); // Debug log
-    console.log("Post structure:", JSON.stringify(post, null, 2)); // Debug log
-    
-    // Ensure the post has all required fields for FullPostView
+
     const fullPost = {
       _id: post._id || post.id || `temp_${Date.now()}`,
       caption: post.caption || post.title || post.description || '',
