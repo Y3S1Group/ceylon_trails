@@ -1,5 +1,6 @@
 import { Award, Bookmark, Camera, Clock, Compass, HeartHandshake, MapPin, MessageCircle, Mountain, Share2, Star, ChevronLeft, ChevronRight, Plus, Map, X, Flag, AlertTriangle } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
 import InteractiveMap from './InteractiveMap';
 import ImageViewer from './ImageViewer';
 import ReportModal from './ReportForm';
@@ -7,9 +8,11 @@ import SavedPost from './SavedPost';
 import { useAuth } from '../hooks/useAuth';
 
 const FullPostView = ({ post, isOpen, onClose }) => {
-    const { isLoggedIn } = useAuth();
+    const { isLoggedIn, user } = useAuth();
 
     const [liked, setLiked] = useState(false);
+    const [likeCount, setLikeCount] = useState(post?.likes?.length || 0);
+
     const [bookmarked, setBookmarked] = useState(false);
     const [showComments, setShowComments] = useState(false);
     const [comment, setComment] = useState('');
@@ -37,12 +40,22 @@ const FullPostView = ({ post, isOpen, onClose }) => {
             }
         };
 
+        if (post && user) {
+            // Normalize both to strings before comparing
+            const userHasLiked = post.likes?.some(
+            likeUserId => String(likeUserId) === String(user.id)
+            );
+
+            setLiked(userHasLiked);
+            setLikeCount(post.likes?.length || 0);
+        }
+
         if (post && isOpen) {
             checkCaptionHeight();
             window.addEventListener('resize', checkCaptionHeight);
             return () => window.removeEventListener('resize', checkCaptionHeight);
         }
-    }, [post, isOpen]);
+    }, [post, isOpen, user]);
 
     // Close modal on escape key
     useEffect(() => {
@@ -103,8 +116,39 @@ const FullPostView = ({ post, isOpen, onClose }) => {
         setExpandedCaption(prev => !prev);
     };
 
-    const toggleLike = () => {
+const toggleLike = async () => {
+        if (!isLoggedIn) {
+            alert('Please log in to like posts');
+            return;
+        }
+
+        // Optimistic UI update
+        const previousLikedState = liked;
+        const previousCount = likeCount;
+        
         setLiked(prev => !prev);
+        setLikeCount(prev => liked ? prev - 1 : prev + 1);
+
+        try {
+            const response = await axios.put(
+                `http://localhost:5006/api/posts/${post._id}/like`,
+                {},
+                { withCredentials: true } // Important: sends cookie with request
+            );
+
+            if (response.data) {
+                // Update with actual server data
+                setLikeCount(response.data.likesCount);
+                setLiked(response.data.isLiked);
+            }
+            
+        } catch (error) {
+            console.error('Error toggling like:', error);
+            // Revert optimistic update on error
+            setLiked(previousLikedState);
+            setLikeCount(previousCount);
+            alert('Failed to update like. Please try again.');
+        }
     };
 
     const toggleBookmark = () => {
@@ -359,19 +403,29 @@ const FullPostView = ({ post, isOpen, onClose }) => {
                 <div className="p-6 border-t border-gray-100 mt-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-6">
+                            {user ? (
+                            // Logged-in user: clickable button
                             <button
                                 onClick={toggleLike}
                                 className={`flex items-center space-x-2 px-3 py-1 rounded-full transition-all ${
-                                    liked
-                                        ? 'text-red-500 bg-red-50'
-                                        : 'text-gray-600 hover:text-red-500 hover:bg-red-50'
+                                liked
+                                    ? 'text-red-500 bg-red-50'
+                                    : 'text-gray-600 hover:text-red-500 hover:bg-red-50'
                                 }`}
                             >
                                 <HeartHandshake className={`w-5 h-5 ${liked ? 'fill-current' : ''}`} />
                                 <span className="text-sm font-medium">
-                                    {liked ? 'Finds Helpful' : 'Helpful'} ({(post.likes?.length || 0) + (liked ? 1 : 0)})
+                                {liked ? 'Finds Helpful' : 'Helpful'} ({likeCount})
                                 </span>
                             </button>
+                            ) : (
+                            // Logged-out user: just show like count in gray
+                            <div className="flex items-center space-x-2 px-3 py-1 rounded-full text-gray-600">
+                                <HeartHandshake className="w-5 h-5" />
+                                <span className="text-sm font-medium">Helpful ({post.likes ? post.likes.length : 0})</span>
+                            </div>
+                            )}
+
                             <button
                                 onClick={toggleComments}
                                 className="flex items-center space-x-2 px-3 py-1 rounded-full text-gray-600 hover:text-blue-500 hover:bg-blue-50 transition-all"

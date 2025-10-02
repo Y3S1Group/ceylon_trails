@@ -11,7 +11,6 @@ const TrailPost = ({ onMapClick }) => {
     const [loading, setLoading] = useState(true);
     const [selectedPost, setSelectedPost] = useState(null);
     const [showFullPost, setShowFullPost] = useState(false);
-    const [liked, setLiked] = useState({});
     const [bookmarked, setBookmarked] = useState({});
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedPostId, setSelectedPostId] = useState(null);
@@ -193,17 +192,10 @@ const TrailPost = ({ onMapClick }) => {
                                     {/* Stats and Actions */}
                                     <div className="flex items-center justify-between text-xs text-gray-500 border-t border-gray-100 pt-3">
                                         <div className="flex items-center space-x-3">
-                                            <button
-                                                onClick={(e) => toggleLike(post._id, e)}
-                                                className={`flex items-center space-x-1 px-2 py-1 rounded-full transition-all ${
-                                                    liked[post._id]
-                                                        ? 'text-red-500 bg-red-50'
-                                                        : 'text-gray-600 hover:text-red-500 hover:bg-red-50'
-                                                }`}
-                                            >
-                                                <HeartHandshake className={`w-3 h-3 ${liked[post._id] ? 'fill-current' : ''}`} />
-                                                <span>{(post.likes?.length || 0) + (liked[post._id] ? 1 : 0)}</span>
-                                            </button>
+                                            <div className="flex items-center space-x-1 text-red-500">
+                                                <HeartHandshake className="w-3 h-3" />
+                                                <span>{post.likes?.length || 0}</span>
+                                            </div>
                                             <button
                                                 onClick={(e) => toggleBookmark(post._id, e)}
                                                 className={`flex items-center space-x-1 px-2 py-1 rounded-full transition-all ${
