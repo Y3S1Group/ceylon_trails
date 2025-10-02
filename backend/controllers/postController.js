@@ -473,3 +473,43 @@ export const searchPosts = async (req, res) => {
     });
   }
 };
+
+// Toggle Like/Unlike
+export const toggleLike = async (req, res) => {
+
+    console.log("Toggle like called:", req.userId, req.params.postId);
+
+  try {
+    const { postId } = req.params;
+    const userId = req.userId; // comes from userAuth middleware
+
+    const post = await Posts.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    // Check if user already liked the post
+    const isLiked = post.likes.includes(userId);
+
+    if (isLiked) {
+      // Remove like (unlike)
+      post.likes = post.likes.filter(
+        (id) => id.toString() !== userId.toString()
+      );
+    } else {
+      // Add like
+      post.likes.push(userId);
+    }
+
+    await post.save();
+
+    return res.status(200).json({
+      message: isLiked ? "Like removed" : "Post liked",
+      likesCount: post.likes.length,
+      isLiked: !isLiked
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};

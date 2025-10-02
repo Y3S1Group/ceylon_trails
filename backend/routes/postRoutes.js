@@ -1,5 +1,6 @@
 import express from 'express';
-import { createPost, deletePost, getAllPosts, getFeedPosts, getPost, updatePost, searchPosts } from '../controllers/postController.js';
+import { createPost, deletePost, getAllPosts, getFeedPosts, getPost, updatePost, searchPosts, toggleLike } from '../controllers/postController.js';
+import userAuth from '../middleware/userauth.js';
 
 const router = express.Router();
 
@@ -12,6 +13,8 @@ router.get("/search", searchPosts);
 router.get("/:postId", getPost);
 router.put("/:postId", updatePost);
 router.delete("/:postId", deletePost);
+
+router.put("/:postId/like", userAuth, toggleLike);
 
 export default router;
 
