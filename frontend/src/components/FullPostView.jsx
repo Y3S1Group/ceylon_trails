@@ -307,7 +307,7 @@ const toggleLike = async () => {
 
     return (
         <div className="fixed inset-0 bg-black/10 backdrop-blur-lg z-60 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-xl max-w-4xl max-h-[90vh] w-full overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-xl max-w-4xl max-h-[80vh] w-full overflow-y-auto">
                 {/* Header with close button */}
                 <div className="sticky top-0 bg-white border-b border-gray-100 p-4 flex items-center justify-between z-20">
                     <div className="flex items-center space-x-4">
@@ -490,6 +490,67 @@ const toggleLike = async () => {
                     </div>
                 )}
 
+                
+                {/* Actions */}
+                <div className="p-6 border-t border-gray-100 mt-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-6">
+                            {user ? (
+                            // Logged-in user: clickable button
+                            <button
+                                onClick={toggleLike}
+                                className={`flex items-center space-x-2 px-3 py-1 rounded-full transition-all ${
+                                liked
+                                    ? 'text-red-500 bg-red-50'
+                                    : 'text-gray-600 hover:text-red-500 hover:bg-red-50'
+                                }`}
+                            >
+                                <HeartHandshake className={`w-5 h-5 ${liked ? 'fill-current' : ''}`} />
+                                <span className="text-sm font-medium">
+                                {liked ? 'Finds Helpful' : 'Helpful'} ({likeCount})
+                                </span>
+                            </button>
+                            ) : (
+                            // Logged-out user: just show like count in gray
+                            <div className="flex items-center space-x-2 px-3 py-1 rounded-full text-gray-600">
+                                <HeartHandshake className="w-5 h-5" />
+                                <span className="text-sm font-medium">Helpful ({post.likes ? post.likes.length : 0})</span>
+                            </div>
+                            )}
+
+                            <button
+                                onClick={toggleComments}
+                                className="flex items-center space-x-2 px-3 py-1 rounded-full text-gray-600 hover:text-blue-500 hover:bg-blue-50 transition-all"
+                            >
+                                <MessageCircle className="w-5 h-5" />
+                                <span className="text-sm font-medium">Comment ({post.comments?.length || 0})</span>
+                            </button>
+                            <button
+                                onClick={toggleBookmark}
+                                className={`flex items-center space-x-2 px-3 py-1 rounded-full transition-all ${
+                                    bookmarked
+                                        ? 'text-yellow-500 bg-yellow-50'
+                                        : 'text-gray-600 hover:text-yellow-500 hover:bg-yellow-50'
+                                } ${!isLoggedIn ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                disabled={!isLoggedIn}
+                            >
+                                <Bookmark className={`w-5 h-5 ${bookmarked ? 'fill-current' : ''}`} />
+                                <span className="text-sm font-medium">Save</span>
+                            </button>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <button
+                                onClick={toggleReportModal}
+                                className="flex items-center space-x-2 px-3 py-1 rounded-full text-gray-600 hover:text-red-500 hover:bg-red-50 transition-all"
+                            >
+                                <Flag className="w-4 h-4" />
+                                <span className="text-sm font-medium">Report</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+
                 {/* Comments Section */}
                 <div className="px-6 pb-6">
                     <div className="border-t border-gray-200 pt-4">
@@ -632,66 +693,6 @@ const toggleLike = async () => {
                                 </div>
                             </div>
                         )}
-                    </div>
-                </div>
-
-                
-                {/* Actions */}
-                <div className="p-6 border-t border-gray-100 mt-3">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-6">
-                            {user ? (
-                            // Logged-in user: clickable button
-                            <button
-                                onClick={toggleLike}
-                                className={`flex items-center space-x-2 px-3 py-1 rounded-full transition-all ${
-                                liked
-                                    ? 'text-red-500 bg-red-50'
-                                    : 'text-gray-600 hover:text-red-500 hover:bg-red-50'
-                                }`}
-                            >
-                                <HeartHandshake className={`w-5 h-5 ${liked ? 'fill-current' : ''}`} />
-                                <span className="text-sm font-medium">
-                                {liked ? 'Finds Helpful' : 'Helpful'} ({likeCount})
-                                </span>
-                            </button>
-                            ) : (
-                            // Logged-out user: just show like count in gray
-                            <div className="flex items-center space-x-2 px-3 py-1 rounded-full text-gray-600">
-                                <HeartHandshake className="w-5 h-5" />
-                                <span className="text-sm font-medium">Helpful ({post.likes ? post.likes.length : 0})</span>
-                            </div>
-                            )}
-
-                            <button
-                                onClick={toggleComments}
-                                className="flex items-center space-x-2 px-3 py-1 rounded-full text-gray-600 hover:text-blue-500 hover:bg-blue-50 transition-all"
-                            >
-                                <MessageCircle className="w-5 h-5" />
-                                <span className="text-sm font-medium">Comment ({post.comments?.length || 0})</span>
-                            </button>
-                            <button
-                                onClick={toggleBookmark}
-                                className={`flex items-center space-x-2 px-3 py-1 rounded-full transition-all ${
-                                    bookmarked
-                                        ? 'text-yellow-500 bg-yellow-50'
-                                        : 'text-gray-600 hover:text-yellow-500 hover:bg-yellow-50'
-                                } ${!isLoggedIn ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                disabled={!isLoggedIn}
-                            >
-                                <Bookmark className={`w-5 h-5 ${bookmarked ? 'fill-current' : ''}`} />
-                                <span className="text-sm font-medium">Save</span>
-                            </button>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <button
-                                onClick={toggleReportModal}
-                                className="flex items-center space-x-2 px-3 py-1 rounded-full text-gray-600 hover:text-red-500 hover:bg-red-50 transition-all"
-                            >
-                                <Flag className="w-4 h-4" />
-                                <span className="text-sm font-medium">Report</span>
-                            </button>
-                        </div>
                     </div>
                 </div>
 
