@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, MapPin, Heart, MessageCircle, Share2, Edit, Trash2, X, Save, Camera, ChevronLeft, ChevronRight, Grid, List, MoreHorizontal, Settings, ExternalLink, Image, Hash, LogOut, User, UserX } from 'lucide-react';
+import { Clock, MapPin, Heart, MessageCircle, Plus, Edit, Trash2, X, Save, Camera, ChevronLeft, ChevronRight, Grid, List, MoreHorizontal, Settings, ExternalLink, Image, Hash, LogOut, User, UserX } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useAuth } from '../hooks/useAuth';
 import ImageViewer from '../components/ImageViewer';
 import LocationInput from '../components/LocationInput';
 import UpdateProfile from '../components/UpdateProfile';
+import CreatePost from '../components/CreatePost';
 
 const Profile = () => {
   const { user: currentUser, authLoading, isLoggedIn, logout } = useAuth();
@@ -13,7 +14,7 @@ const Profile = () => {
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showDeleteProfileConfirm, setShowDeleteProfileConfirm] = useState(false);
   const [showKebabMenu, setShowKebabMenu] = useState(false);
-
+  const [showCreatePost, setShowCreatePost] = useState(false);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
@@ -55,6 +56,10 @@ const Profile = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePostCreated = (newPost) => {
+    setPosts(prev => [newPost, ...prev].slice(0, 5));
   };
 
   useEffect(() => {
@@ -910,6 +915,25 @@ const Profile = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/*floating button for create a post*/}
+        {!authLoading && isLoggedIn && (
+          <button
+            className="group fixed bottom-14 right-18 w-14 h-14 bg-teal-600/40 backdrop-blur-xs border border-teal-600 hover:border-teal-800 hover:bg-teal-600/90 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 z-20"
+            onClick={() => setShowCreatePost(true)}
+            aria-label="Add new post"
+          >
+            <Plus className="w-6 h-6 text-teal-600 group-hover:text-white" />
+          </button>
+        )}
+
+        {!authLoading && isLoggedIn && (
+          <CreatePost
+            isOpen={showCreatePost}
+            onClose={() => setShowCreatePost(false)}
+            onPostCreated={handlePostCreated}
+          />
         )}
 
         {/* Image Viewer Modal */}
