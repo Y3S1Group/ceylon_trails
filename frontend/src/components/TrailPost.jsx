@@ -1,14 +1,16 @@
-import { Award, Bookmark, Camera, Clock, Compass, HeartHandshake, MapPin, MessageCircle, Mountain, Share2, Star, ChevronLeft, ChevronRight, Plus, Map, Eye } from 'lucide-react';
+import { Award, Bookmark, Camera, Clock, Compass, HeartHandshake, MapPin, MessageCircle, Mountain, Share2, Star, ChevronLeft, ChevronRight, Plus, Map, Eye, ArrowLeft } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
 import FullPostView from './FullPostView';
 import SavedPost from './SavedPost';
 import { useAuth } from '../hooks/useAuth';
 
-const TrailPost = ({ onMapClick }) => {
+const TrailPost = ({ onMapClick, endpoint="feed", showPagination = false, sortBy = 'recent' }) => {
     const { isLoggedIn } = useAuth();
 
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(null);
     const [selectedPost, setSelectedPost] = useState(null);
     const [showFullPost, setShowFullPost] = useState(false);
     const [bookmarked, setBookmarked] = useState({});
@@ -19,11 +21,19 @@ const TrailPost = ({ onMapClick }) => {
         const loadPosts = async () => {
             try {
                 setLoading(true);
-                const response = await fetch('http://localhost:5006/api/posts/feed');
+
+                const url = endpoint === 'all'
+                    ? `http://localhost:5006/api/posts/all?page=${page}&limit=9&sort=${sortBy}`
+                    : 'http://localhost:5006/api/posts/feed';
+                const response = await fetch(url);
                 const data = await response.json();
                 
                 if (response.ok && data.success) {
                     setPosts(data.data);
+
+                    if (data.pagination) {
+                        setTotalPages(data.pagination.pages);
+                    }
                 }
             } catch (error) {
                 console.error('Error loading posts:', error);
@@ -33,7 +43,7 @@ const TrailPost = ({ onMapClick }) => {
         };
 
         loadPosts();
-    }, []);
+    }, [endpoint, page, sortBy]);
 
     const getUserDisplayInfo = (userObj) => {
         if (userObj && typeof userObj === 'object' && userObj.name) {
@@ -97,6 +107,7 @@ const TrailPost = ({ onMapClick }) => {
             )}
 
             {!loading && posts.length > 0 && (
+                <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {posts.map((post) => {
                         const userInfo = getUserDisplayInfo(post.userId);
@@ -218,6 +229,29 @@ const TrailPost = ({ onMapClick }) => {
                         );
                     })}
                 </div>
+
+                {showPagination && totalPages > 1 && (
+                        <div className="flex justify-center items-center space-x-4 mt-8">
+                            <button
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1}
+                                className="px-2 py-2  text-white rounded-full disabled:opacity-50 disabled:cursor-not-allowed hover:bg-teal-700 transition-colors"
+                            >
+                               <ChevronLeft className='w-5 h-5 text-teal-500 hover:text-white font-bold'/>
+                            </button>
+                            <span className="text-gray-600 font-medium">
+                                 {page} of {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                disabled={page === totalPages}
+                                className="px-2 py-2 text-white rounded-full disabled:opacity-50 disabled:cursor-not-allowed hover:bg-teal-700 transition-colors"
+                            >
+                               <ChevronRight className='w-5 h-5 text-teal-500 hover:text-white font-bold'/>
+                            </button>
+                        </div>
+                    )}
+                </>
             )}
 
             {/* Full Post Modal */}
