@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Sidebar from "../components/AdminDash/SideBar.jsx";
 import AdminUsers from "../components/AdminDash/UserList.jsx";
+import AdminPosts from "../components/AdminDash/ReportPostList.jsx";
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState("users"); // Track which section is active
@@ -16,6 +17,7 @@ export default function Dashboard() {
       {/* Main Content */}
       <div className="flex-1 bg-gray-100 p-6 overflow-y-auto">
         {activeSection === "users" && <AdminUsers />}
+        {activeSection === "posts" && <AdminPosts />}
         {/* Future sections can be added here */}
         {/* {activeSection === "posts" && <AdminPosts />} */}
         {/* {activeSection === "settings" && <AdminSettings />} */}
