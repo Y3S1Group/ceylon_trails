@@ -513,3 +513,139 @@ export const toggleLike = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+export const addComment = async (req, res) => {
+    try {
+        const { postId } = req.params;
+        const { text } = req.body;
+        const userId = req.user.id;
+
+        if (!text || text.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Comment text is required'
+            });
+        }
+
+        const post = await Posts.findById(postId);
+        if (!post) {
+            return res.status(404).json({
+                success: false,
+                message: 'Post not found'
+            });
+        }
+
+        const newComment = {
+            userId, text: text.trim(), parentId: null, replies: [], createdAt: new Date() 
+        };
+
+        post.comments.push(newComment);
+        await post.save();
+
+        await post.populate('comments.userId', 'name email');
+        const addedComment = post.comments[post.comments.length - 1];
+
+        res.status(201).json({
+            success: true,
+            data: addedComment
+        });
+    } catch (error) {
+        console.error('Error adding comment:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+export const addReply = async (req, res) => {
+    try {
+        const { postId, commentId } = req.params;
+        const { text } = req.body;
+        const userId = req.user.id;
+
+        if (!text || text.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Reply text is required'
+            });
+        }
+
+        const post = await Posts.findById(postId);
+        if (!post) {
+            return res.status(404).json({
+                success: false,
+                message: 'Post not found'
+            });
+        }
+
+        const parentComment = post.comments.id(commentId);
+        if (!parentComment) {
+            return res.status(404).json({
+                success: false,
+                message: 'Comment not found'
+            });
+        }
+
+        const newReply = {
+            userId,
+            text: text.trim(),
+            parentId: commentId,
+            replies: [],
+            createdAt: new Date()
+        }
+
+        post.comments.push(newReply);
+        const replyId = post.comments[post.comments.length - 1]._id;
+
+        parentComment.replies.push(replyId);
+
+        await post.save();
+        await post.populate('comments.userId', 'name email');
+
+        const addedReply = post.comments.id(replyId);
+
+        res.status(201).json({
+            success: true,
+            data: addedReply
+        });
+
+    } catch (error) {
+        console.error('Error adding reply:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+export const getPostComments = async (req, res) => {
+    try {
+        const { postId } = req.params;
+
+        const post = await Posts.findById(postId)
+            .populate('comments.userId', 'name email');
+
+        if (!post) {
+            return res.status(404).json({
+                success: false,
+                message: 'Post not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: post.comments
+        });
+
+    } catch (error) {
+        console.error('Error fetching comments:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
