@@ -43,7 +43,9 @@ const postsSchema = new mongoose.Schema({
     comments: [{
         userId: { type: Schema.Types.ObjectId, ref: 'User' },
         text: { type: String, required: true },
-        date: { type: Date, default: Date.now }
+        parentId: { type: Schema.Types.ObjectId, default: null },
+        replies: [{ type: Schema.Types.ObjectId }],
+        createdAt: { type: Date, default: Date.now }
     }],
 }, { timestamps: true });
 
