@@ -155,8 +155,8 @@ const Explore = ({ searchValue, setSearchValue, showSearchInNav, isSelected }) =
       </div>
       <div className="flex items-center justify-between pl-18">
         <div>
-          <h2 className="text-4xl font-bold text-gray-900 mb-2">Featured Adventures</h2>
-          <p className="text-xl text-gray-600">Stories from our explorers</p>
+          <h2 className="text-4xl font-bold text-gray-900 mb-2 ml-16">Featured Adventures</h2>
+          <p className="text-xl text-gray-600 ml-16">Stories from our explorers</p>
         </div>
       </div>
       <TrailPost 
@@ -164,6 +164,7 @@ const Explore = ({ searchValue, setSearchValue, showSearchInNav, isSelected }) =
           setSelectedPost(post);
           setShowLocationMap(true);
         }}
+        endpoint="feed"
       />
 
       {/*floating button for create a post*/}
