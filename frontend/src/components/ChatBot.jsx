@@ -315,7 +315,8 @@ const ChatBot = ({ isOpen, onClose, initialPrompt = "", onPostSelect, onPostClic
       createdAt: post.createdAt || new Date().toISOString(),
       likes: post.likes || [],
       comments: post.comments || [],
-      tags: post.tags || []
+      tags: post.tags || [],
+      coordinates: post.coordinates || null
     };
     
     console.log("Processed post for FullPostView:", fullPost); // Debug log
