@@ -518,7 +518,7 @@ export const addComment = async (req, res) => {
     try {
         const { postId } = req.params;
         const { text } = req.body;
-        const userId = req.user.id;
+        const userId = req.user?.id || req.body.userId;
 
         if (!text || text.trim().length === 0) {
             return res.status(400).json({
@@ -563,7 +563,7 @@ export const addReply = async (req, res) => {
     try {
         const { postId, commentId } = req.params;
         const { text } = req.body;
-        const userId = req.user.id;
+        const userId = req.user?.id || req.body.userId;
 
         if (!text || text.trim().length === 0) {
             return res.status(400).json({
