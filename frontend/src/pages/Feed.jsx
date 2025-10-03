@@ -1,10 +1,12 @@
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import TrailPost from "../components/TrailPost";
-import { Clock, Star, TrendingUp } from "lucide-react";
+import { Clock, Heart, Star, TrendingUp } from "lucide-react";
 import Dropdown from "../components/Dropdown";
+import { useState } from "react";
 
 const Feed = () => {
+  const [filterValue, setFilterValue] = useState('recent');
 
   const feedFilterOptions = [
     { 
@@ -16,28 +18,22 @@ const Feed = () => {
     { 
       value: 'popular', 
       label: 'Most Popular', 
-      icon: <TrendingUp className="w-4 h-4" />,
+      icon: <Heart className="w-4 h-4" />,
       description: 'Trending trails'
-    },
-    { 
-      value: 'rated', 
-      label: 'Highest Rated', 
-      icon: <Star className="w-4 h-4" />,
-      description: 'Top rated experiences'
     }
   ];
 
   const handleFilterChange = (value, option) => {
     console.log('Filter changed to:', value, option);
-    // Add your filter logic here
+    setFilterValue(value);
   };
   return (
     <div className="pt-30">
       <Navbar />
       <div className="flex items-center justify-between mb-0 pl-20 pr-20">
         <div>
-          <h2 className="text-4xl font-bold text-gray-900 mb-2">Your Feed</h2>
-          <p className="text-xl text-gray-600">Stories from our explorers</p>
+          <h2 className="text-4xl font-bold text-gray-900 mb-2 ml-16">Your Feed</h2>
+          <p className="text-xl text-gray-600 ml-16">Stories from our explorers</p>
         </div>
           <Dropdown
             options={feedFilterOptions}
@@ -48,7 +44,11 @@ const Feed = () => {
             width="min-h-[30px]"
           />
         </div>
-      <TrailPost />
+      <TrailPost 
+        endpoint="all"
+        showPagination={true}
+        sortBy={filterValue}
+      />
       <Footer />
     </div>
   );

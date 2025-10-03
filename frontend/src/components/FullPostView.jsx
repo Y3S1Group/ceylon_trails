@@ -28,6 +28,9 @@ const FullPostView = ({ post, isOpen, onClose }) => {
     const [reportSubmitted, setReportSubmitted] = useState(false);
     const [showMapModal, setShowMapModal] = useState(false);
     const [userLocation, setUserLocation] = useState(null);
+    const [comments, setComments] = useState([]);
+    const [replyingTo, setReplyingTo] = useState(null);
+    const [replyText, setReplyText] = useState('');
     const captionRef = useRef(null);
 
     useEffect(() => {
@@ -76,7 +79,95 @@ const FullPostView = ({ post, isOpen, onClose }) => {
         };
     }, [isOpen, onClose]);
 
+
+    useEffect(() => {
+        const fetchComments = async () => {
+            if (post && isOpen) {
+                try {
+                    const response = await axios.get(`http://localhost:5006/api/posts/${post._id}/comments`);
+
+                    if (response.data.success) {
+                        setComments(response.data.data);
+                    }
+                } catch (error) {
+                    console.error('Error fetching comments:', error);
+                }
+            }
+        };
+
+        fetchComments();
+    }, [post, isOpen]);
+
     if (!isOpen || !post) return null;
+
+    const handleAddComment = async (e) => {
+        e.preventDefault();
+        if (!comment.trim() || !isLoggedIn) return;
+        try {
+            const response = await axios.post(
+                `http://localhost:5006/api/posts/${post._id}/comments`,
+                { 
+                    text: comment,
+                    userId: user.id
+                },
+                { withCredentials: true }
+            );
+            if (response.data.success) {
+                setComments([...comments, response.data.data]);
+                setComment('');
+            }
+        } catch (error) {
+            console.error('Error adding comment:', error);
+            alert('Failed to add comment');
+        }
+    };
+
+    const handleAddReply = async (commentId) => {
+        if (!replyText.trim() || !isLoggedIn) return;
+        try {
+            const response = await axios.post(
+                `http://localhost:5006/api/posts/${post._id}/comments/${commentId}/reply`,
+                { text: replyText },
+                { withCredentials: true }
+            );
+            if (response.data.success) {
+                setComments([...comments, response.data.data]);
+                setReplyText('');
+                setReplyingTo(null);
+            }
+        } catch (error) {
+            console.error('Error adding reply:', error);
+            alert('Failed to add reply');
+        }
+    };
+
+    const getCommentUserInfo = (userObj) => {
+        if (userObj && typeof userObj === 'object' && userObj.name) {
+            return {
+                name: userObj.name,
+                avatar: userObj.name.charAt(0).toUpperCase()
+            };
+        }
+        return {
+            name: 'User',
+            avatar: 'U'
+        };
+    };
+
+    const organizeComments = (comments) => {
+        const topLevel = comments.filter(c => !c.parentId);
+        const repliesMap = {};
+        comments.forEach(comment => {
+            if (comment.parentId) {
+                if (!repliesMap[comment.parentId]) {
+                    repliesMap[comment.parentId] = [];
+                }
+                repliesMap[comment.parentId].push(comment);
+            }
+        });
+        return { topLevel, repliesMap };
+    };
+    const { topLevel, repliesMap } = organizeComments(comments);
 
     const getUserDisplayInfo = (userObj) => {
         if (userObj && typeof userObj === 'object' && userObj.name) {
@@ -215,8 +306,8 @@ const toggleLike = async () => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-lg z-60 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-xl max-w-4xl max-h-[90vh] w-full overflow-y-auto">
+        <div className="fixed inset-0 bg-black/10 backdrop-blur-lg z-60 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-4xl max-h-[80vh] w-full overflow-y-auto">
                 {/* Header with close button */}
                 <div className="sticky top-0 bg-white border-b border-gray-100 p-4 flex items-center justify-between z-20">
                     <div className="flex items-center space-x-4">
@@ -399,6 +490,7 @@ const toggleLike = async () => {
                     </div>
                 )}
 
+                
                 {/* Actions */}
                 <div className="p-6 border-t border-gray-100 mt-3">
                     <div className="flex items-center justify-between">
@@ -458,34 +550,152 @@ const toggleLike = async () => {
                     </div>
                 </div>
 
-                {/* Comments */}
-                {showComments && (
-                    <div className="px-6 pb-6 border-t border-gray-100">
-                        <div className="space-y-4 mt-4">
-                            <div className="flex items-start space-x-3">
-                                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                                    JS
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-sm"><span className="font-semibold">John Silva</span> Amazing photos! How long did the hike take?</p>
-                                    <p className="text-xs text-gray-500 mt-1">2 days ago</p>
+
+                {/* Comments Section */}
+                <div className="px-6 pb-6">
+                    <div className="border-t border-gray-200 pt-4">
+                        <button
+                            onClick={toggleComments}
+                            className="flex items-center space-x-2 text-gray-700 hover:text-teal-600 mb-4"
+                        >
+                            <MessageCircle className="w-5 h-5" />
+                            <span className="font-medium">
+                                {comments.length} {comments.length === 1 ? 'Comment' : 'Comments'}
+                            </span>
+                        </button>
+
+                        {showComments && (
+                            <div className="space-y-4">
+                                {/* Comment Input - Only for logged-in users */}
+                                {isLoggedIn && (
+                                    <form onSubmit={handleAddComment} className="flex space-x-3">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-700 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+                                            {user?.name?.charAt(0).toUpperCase() || 'U'}
+                                        </div>
+                                        <div className="flex-1 flex space-x-2">
+                                            <input
+                                                type="text"
+                                                value={comment}
+                                                onChange={(e) => setComment(e.target.value)}
+                                                placeholder="Write a comment..."
+                                                className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                            />
+                                            <button
+                                                type="submit"
+                                                disabled={!comment.trim()}
+                                                className="px-4 py-2 bg-teal-600 text-white rounded-full hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                Post
+                                            </button>
+                                        </div>
+                                    </form>
+                                )}
+
+                                {/* Display Comments */}
+                                <div className="space-y-4 mt-4">
+                                    {topLevel.map((comment) => {
+                                        const commentUser = getCommentUserInfo(comment.userId);
+                                        const commentReplies = repliesMap[comment._id] || [];
+
+                                        return (
+                                            <div key={comment._id} className="space-y-3">
+                                                {/* Main Comment */}
+                                                <div className="flex space-x-3">
+                                                    <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+                                                        {commentUser.avatar}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="bg-gray-100 rounded-2xl px-4 py-2">
+                                                            <p className="font-semibold text-sm text-gray-900">
+                                                                {commentUser.name}
+                                                            </p>
+                                                            <p className="text-gray-700 text-sm mt-1">
+                                                                {comment.text}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex items-center space-x-3 mt-1 px-2">
+                                                            <span className="text-xs text-gray-500">
+                                                                {new Date(comment.createdAt).toLocaleDateString()}
+                                                            </span>
+                                                            {isLoggedIn && (
+                                                                <button
+                                                                    onClick={() => setReplyingTo(comment._id)}
+                                                                    className="text-xs text-teal-600 hover:text-teal-700 font-medium"
+                                                                >
+                                                                    Reply
+                                                                </button>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Reply Input */}
+                                                        {replyingTo === comment._id && (
+                                                            <div className="flex space-x-2 mt-2">
+                                                                <input
+                                                                    type="text"
+                                                                    value={replyText}
+                                                                    onChange={(e) => setReplyText(e.target.value)}
+                                                                    placeholder={`Reply to ${commentUser.name}...`}
+                                                                    className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                                                    autoFocus
+                                                                />
+                                                                <button
+                                                                    onClick={() => handleAddReply(comment._id)}
+                                                                    disabled={!replyText.trim()}
+                                                                    className="px-3 py-1.5 text-sm bg-teal-600 text-white rounded-full hover:bg-teal-700 disabled:opacity-50"
+                                                                >
+                                                                    Reply
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setReplyingTo(null);
+                                                                        setReplyText('');
+                                                                    }}
+                                                                    className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Replies */}
+                                                {commentReplies.length > 0 && (
+                                                    <div className="ml-11 space-y-3">
+                                                        {commentReplies.map((reply) => {
+                                                            const replyUser = getCommentUserInfo(reply.userId);
+                                                            return (
+                                                                <div key={reply._id} className="flex space-x-3">
+                                                                    <div className="w-7 h-7 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                                                                        {replyUser.avatar}
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <div className="bg-gray-100 rounded-2xl px-3 py-2">
+                                                                            <p className="font-semibold text-xs text-gray-900">
+                                                                                {replyUser.name}
+                                                                            </p>
+                                                                            <p className="text-gray-700 text-sm mt-1">
+                                                                                {reply.text}
+                                                                            </p>
+                                                                        </div>
+                                                                        <span className="text-xs text-gray-500 px-2 mt-1 inline-block">
+                                                                            {new Date(reply.createdAt).toLocaleDateString()}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
-                        </div>
-                        <div className="flex items-center space-x-3 mt-4">
-                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                                {userInfo.avatar}
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Write a comment..."
-                                value={comment}
-                                onChange={(e) => setComment(e.target.value)}
-                                className="flex-1 px-4 py-2 bg-gray-50 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                        </div>
+                        )}
                     </div>
-                )}
+                </div>
+
 
                 <InteractiveMap
                     isOpen={showMapModal}

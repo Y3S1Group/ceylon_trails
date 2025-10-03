@@ -1,5 +1,5 @@
 import express from 'express';
-import { createPost, deletePost, getAllPosts, getFeedPosts, getPost, updatePost, searchPosts, toggleLike } from '../controllers/postController.js';
+import { createPost, deletePost, getAllPosts, getFeedPosts, getPost, updatePost, searchPosts, toggleLike, addComment, addReply, getPostComments } from '../controllers/postController.js';
 import userAuth from '../middleware/userauth.js';
 
 const router = express.Router();
@@ -15,6 +15,10 @@ router.put("/:postId", updatePost);
 router.delete("/:postId", deletePost);
 
 router.put("/:postId/like", userAuth, toggleLike);
+
+router.post("/:postId/comments", userAuth, addComment);
+router.post("/:postId/comments/:commentId/reply", userAuth, addReply);
+router.get("/:postId/comments", getPostComments);
 
 export default router;
 

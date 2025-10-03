@@ -333,17 +333,80 @@ export const deletePost = async (req, res) => {
 
 export const getAllPosts = async (req, res) => {
     try {
-        const { page = 1, limit = 10, location } = req.query;
+        const { page = 1, limit = 10, location, sort = 'recent' } = req.query;
 
         const filter = {};
         if (location) {
             filter.location = { $regex: location, $options: 'i' };
         }
 
+        let sortOption = {};
+        
+        // Define sort options
+        switch(sort) {
+            case 'popular':
+                // For popular, we need to use aggregation to sort by likes count
+                const popularPosts = await Posts.aggregate([
+                    { $match: filter },
+                    {
+                        $addFields: {
+                            likesCount: { $size: { $ifNull: ['$likes', []] } }
+                        }
+                    },
+                    {
+                        $sort: { likesCount: -1, createdAt: -1 }
+                    },
+                    {
+                        $skip: (page - 1) * limit
+                    },
+                    {
+                        $limit: limit * 1
+                    },
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'userId',
+                            foreignField: '_id',
+                            as: 'userId'
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: '$userId',
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $project: {
+                            'userId.password': 0,
+                            'userId.__v': 0
+                        }
+                    }
+                ]);
+
+                const total = await Posts.countDocuments(filter);
+
+                return res.status(200).json({
+                    success: true,
+                    data: popularPosts,
+                    pagination: {
+                        current: parseInt(page),
+                        pages: Math.ceil(total / limit),
+                        total
+                    }
+                });
+                
+            case 'recent':
+            default:
+                sortOption = { createdAt: -1 };
+                break;
+        }
+
+        // For recent and rated, use normal query
         const posts = await Posts.find(filter)
-            .populate('userId', 'username email')
-            .populate('comments.userId', 'username email')
-            .sort({ createdAt: -1})
+            .populate('userId', 'name email')
+            .populate('comments.userId', 'name email')
+            .sort(sortOption)
             .limit(limit * 1)
             .skip((page - 1) * limit);
 
@@ -353,8 +416,8 @@ export const getAllPosts = async (req, res) => {
             success: true,
             data: posts,
             pagination: {
-                current: page,
-                pages: Math.ceil(total/ limit),
+                current: parseInt(page),
+                pages: Math.ceil(total / limit),
                 total
             }
         });
@@ -375,8 +438,8 @@ export const getFeedPosts = async (req, res) => {
         const posts = await Posts.find({})
             .populate('userId', 'name email')
             .populate('comments.userId', 'name email')
-            .sort({ createdAt: -1 })
-            .limit(10);
+            .sort({ 'likes': -1, createdAt: -1 })
+            .limit(9);
         console.log('Found posts:', posts.length);
         res.status(200).json({
             success: true,
@@ -512,4 +575,140 @@ export const toggleLike = async (req, res) => {
     console.error(error);
     return res.status(500).json({ message: "Server error" });
   }
+};
+
+export const addComment = async (req, res) => {
+    try {
+        const { postId } = req.params;
+        const { text } = req.body;
+        const userId = req.user?.id || req.body.userId;
+
+        if (!text || text.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Comment text is required'
+            });
+        }
+
+        const post = await Posts.findById(postId);
+        if (!post) {
+            return res.status(404).json({
+                success: false,
+                message: 'Post not found'
+            });
+        }
+
+        const newComment = {
+            userId, text: text.trim(), parentId: null, replies: [], createdAt: new Date() 
+        };
+
+        post.comments.push(newComment);
+        await post.save();
+
+        await post.populate('comments.userId', 'name email');
+        const addedComment = post.comments[post.comments.length - 1];
+
+        res.status(201).json({
+            success: true,
+            data: addedComment
+        });
+    } catch (error) {
+        console.error('Error adding comment:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+export const addReply = async (req, res) => {
+    try {
+        const { postId, commentId } = req.params;
+        const { text } = req.body;
+        const userId = req.user?.id || req.body.userId;
+
+        if (!text || text.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Reply text is required'
+            });
+        }
+
+        const post = await Posts.findById(postId);
+        if (!post) {
+            return res.status(404).json({
+                success: false,
+                message: 'Post not found'
+            });
+        }
+
+        const parentComment = post.comments.id(commentId);
+        if (!parentComment) {
+            return res.status(404).json({
+                success: false,
+                message: 'Comment not found'
+            });
+        }
+
+        const newReply = {
+            userId,
+            text: text.trim(),
+            parentId: commentId,
+            replies: [],
+            createdAt: new Date()
+        }
+
+        post.comments.push(newReply);
+        const replyId = post.comments[post.comments.length - 1]._id;
+
+        parentComment.replies.push(replyId);
+
+        await post.save();
+        await post.populate('comments.userId', 'name email');
+
+        const addedReply = post.comments.id(replyId);
+
+        res.status(201).json({
+            success: true,
+            data: addedReply
+        });
+
+    } catch (error) {
+        console.error('Error adding reply:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+export const getPostComments = async (req, res) => {
+    try {
+        const { postId } = req.params;
+
+        const post = await Posts.findById(postId)
+            .populate('comments.userId', 'name email');
+
+        if (!post) {
+            return res.status(404).json({
+                success: false,
+                message: 'Post not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: post.comments
+        });
+
+    } catch (error) {
+        console.error('Error fetching comments:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
 };
