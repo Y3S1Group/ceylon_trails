@@ -333,17 +333,80 @@ export const deletePost = async (req, res) => {
 
 export const getAllPosts = async (req, res) => {
     try {
-        const { page = 1, limit = 10, location } = req.query;
+        const { page = 1, limit = 10, location, sort = 'recent' } = req.query;
 
         const filter = {};
         if (location) {
             filter.location = { $regex: location, $options: 'i' };
         }
 
+        let sortOption = {};
+        
+        // Define sort options
+        switch(sort) {
+            case 'popular':
+                // For popular, we need to use aggregation to sort by likes count
+                const popularPosts = await Posts.aggregate([
+                    { $match: filter },
+                    {
+                        $addFields: {
+                            likesCount: { $size: { $ifNull: ['$likes', []] } }
+                        }
+                    },
+                    {
+                        $sort: { likesCount: -1, createdAt: -1 }
+                    },
+                    {
+                        $skip: (page - 1) * limit
+                    },
+                    {
+                        $limit: limit * 1
+                    },
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'userId',
+                            foreignField: '_id',
+                            as: 'userId'
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: '$userId',
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $project: {
+                            'userId.password': 0,
+                            'userId.__v': 0
+                        }
+                    }
+                ]);
+
+                const total = await Posts.countDocuments(filter);
+
+                return res.status(200).json({
+                    success: true,
+                    data: popularPosts,
+                    pagination: {
+                        current: parseInt(page),
+                        pages: Math.ceil(total / limit),
+                        total
+                    }
+                });
+                
+            case 'recent':
+            default:
+                sortOption = { createdAt: -1 };
+                break;
+        }
+
+        // For recent and rated, use normal query
         const posts = await Posts.find(filter)
-            .populate('userId', 'username email')
-            .populate('comments.userId', 'username email')
-            .sort({ createdAt: -1})
+            .populate('userId', 'name email')
+            .populate('comments.userId', 'name email')
+            .sort(sortOption)
             .limit(limit * 1)
             .skip((page - 1) * limit);
 
@@ -353,8 +416,8 @@ export const getAllPosts = async (req, res) => {
             success: true,
             data: posts,
             pagination: {
-                current: page,
-                pages: Math.ceil(total/ limit),
+                current: parseInt(page),
+                pages: Math.ceil(total / limit),
                 total
             }
         });
@@ -375,8 +438,8 @@ export const getFeedPosts = async (req, res) => {
         const posts = await Posts.find({})
             .populate('userId', 'name email')
             .populate('comments.userId', 'name email')
-            .sort({ createdAt: -1 })
-            .limit(10);
+            .sort({ 'likes': -1, createdAt: -1 })
+            .limit(9);
         console.log('Found posts:', posts.length);
         res.status(200).json({
             success: true,
