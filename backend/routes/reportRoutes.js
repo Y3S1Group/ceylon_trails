@@ -1,5 +1,6 @@
 import express from 'express';
-import { createReport, getReports, updateReportStatus } from '../controllers/reportController.js';
+import { createReport, deleteReportPost, getReports, getSingleReport, updateReportStatus } from '../controllers/reportController.js';
+import userAuth from '../middleware/userauth.js';
 
 const router = express.Router();
 
@@ -7,9 +8,11 @@ const router = express.Router();
 router.post('/create', createReport);
 
 // Get all reports (admin only)
-router.get('/all', getReports);
+router.get('/:reportId/single-report', getSingleReport);
+router.get('/all',userAuth, getReports);
 
 // Update report status (admin only)
-router.put('/update-status', updateReportStatus);
+router.put('/:reportId/update-status', updateReportStatus);
+router.delete('/:reportPostId/delete',deleteReportPost);
 
 export default router;
