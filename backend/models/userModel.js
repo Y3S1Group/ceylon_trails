@@ -11,6 +11,12 @@ const userSchema = new mongoose.Schema({
     resetOtpExpires: {type: Number, default: 0},
     role: {type: String, enum: ['user', 'admin'], default: 'user'},
 
+    // Profile Images 
+    profileImage: {type: String, default: ''},
+    profileImagePublicId: {type: String, default: ''},
+    backgroundImage: {type: String, default: ''},
+    backgroundImagePublicId: {type: String, default: ''},
+
     //new
     createdAt: { type: Date, default: Date.now }, 
     lastLogin: { type: Date, default: null },   
