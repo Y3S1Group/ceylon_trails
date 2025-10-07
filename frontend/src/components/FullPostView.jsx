@@ -12,7 +12,6 @@ const FullPostView = ({ post, isOpen, onClose }) => {
 
     const [liked, setLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(post?.likes?.length || 0);
-
     const [bookmarked, setBookmarked] = useState(false);
     const [showComments, setShowComments] = useState(false);
     const [comment, setComment] = useState('');
