@@ -4,7 +4,8 @@ import 'dotenv/config';
 import userModel from '../models/userModel.js';
 import { text } from 'express';
 import transporter from '../config/nodemailer.js';
-import postsModel from '../models/Posts.js'; // to delete all posts of deleted acount
+import postsModel from '../models/Posts.js'; 
+import { uploadToCloudinary, deleteFromCloudinary } from '../config/cloudinary.js';
 
 
 export const register = async (req, res) => {
@@ -190,6 +191,7 @@ export const verifyEmail = async (req, res) => {
     }
 }
 
+// New
 export const getCurrentUser = async (req, res) => {
   try {
     const userId = req.userId; // From middleware
@@ -209,6 +211,8 @@ export const getCurrentUser = async (req, res) => {
         name: user.name,
         email: user.email,
         username: user.username || user.name,
+        profileImage: user.profileImage || '',
+        backgroundImage: user.backgroundImage || ''
       }
     });
   } catch (error) {
@@ -256,15 +260,188 @@ export const updateProfile = async (req, res) => {
     }
 };
 
-//delete user profile function
+// Upload Profile Image - New
+export const uploadProfileImage = async (req, res) => {
+    const userId = req.userId;
+
+    try {
+        if (!req.file) {
+            return res.json({ success: false, message: 'No image file provided' });
+        }
+
+        const user = await userModel.findById(userId);
+        if (!user) {
+            return res.json({ success: false, message: 'User not found' });
+        }
+
+        // Delete old profile image from Cloudinary if exists
+        if (user.profileImagePublicId) {
+            try {
+                await deleteFromCloudinary(user.profileImagePublicId);
+            } catch (error) {
+                console.error('Error deleting old profile image:', error);
+            }
+        }
+
+        // Upload new image to Cloudinary
+        const uploadResult = await uploadToCloudinary(req.file.buffer, req.file.originalname);
+
+        // Update user with new image
+        user.profileImage = uploadResult.url;
+        user.profileImagePublicId = uploadResult.publicId;
+        await user.save();
+
+        return res.json({
+            success: true,
+            message: 'Profile image uploaded successfully',
+            profileImage: uploadResult.url
+        });
+
+    } catch (error) {
+        return res.json({ success: false, message: error.message });
+    }
+};
+
+// Upload Background Image - New
+export const uploadBackgroundImage = async (req, res) => {
+    const userId = req.userId;
+
+    try {
+        if (!req.file) {
+            return res.json({ success: false, message: 'No image file provided' });
+        }
+
+        const user = await userModel.findById(userId);
+        if (!user) {
+            return res.json({ success: false, message: 'User not found' });
+        }
+
+        // Delete old background image from Cloudinary if exists
+        if (user.backgroundImagePublicId) {
+            try {
+                await deleteFromCloudinary(user.backgroundImagePublicId);
+            } catch (error) {
+                console.error('Error deleting old background image:', error);
+            }
+        }
+
+        // Upload new image to Cloudinary
+        const uploadResult = await uploadToCloudinary(req.file.buffer, req.file.originalname);
+
+        // Update user with new image
+        user.backgroundImage = uploadResult.url;
+        user.backgroundImagePublicId = uploadResult.publicId;
+        await user.save();
+
+        return res.json({
+            success: true,
+            message: 'Background image uploaded successfully',
+            backgroundImage: uploadResult.url
+        });
+
+    } catch (error) {
+        return res.json({ success: false, message: error.message });
+    }
+};
+
+// Delete Profile Image - New
+export const deleteProfileImage = async (req, res) => {
+    const userId = req.userId;
+
+    try {
+        const user = await userModel.findById(userId);
+        if (!user) {
+            return res.json({ success: false, message: 'User not found' });
+        }
+
+        if (!user.profileImagePublicId) {
+            return res.json({ success: false, message: 'No profile image to delete' });
+        }
+
+        // Delete from Cloudinary
+        try {
+            await deleteFromCloudinary(user.profileImagePublicId);
+        } catch (error) {
+            console.error('Error deleting from Cloudinary:', error);
+        }
+
+        // Update user
+        user.profileImage = '';
+        user.profileImagePublicId = '';
+        await user.save();
+
+        return res.json({
+            success: true,
+            message: 'Profile image deleted successfully'
+        });
+
+    } catch (error) {
+        return res.json({ success: false, message: error.message });
+    }
+};
+
+// Delete Background Image - New
+export const deleteBackgroundImage = async (req, res) => {
+    const userId = req.userId;
+
+    try {
+        const user = await userModel.findById(userId);
+        if (!user) {
+            return res.json({ success: false, message: 'User not found' });
+        }
+
+        if (!user.backgroundImagePublicId) {
+            return res.json({ success: false, message: 'No background image to delete' });
+        }
+
+        // Delete from Cloudinary
+        try {
+            await deleteFromCloudinary(user.backgroundImagePublicId);
+        } catch (error) {
+            console.error('Error deleting from Cloudinary:', error);
+        }
+
+        // Update user
+        user.backgroundImage = '';
+        user.backgroundImagePublicId = '';
+        await user.save();
+
+        return res.json({
+            success: true,
+            message: 'Background image deleted successfully'
+        });
+
+    } catch (error) {
+        return res.json({ success: false, message: error.message });
+    }
+};
+
+//delete user profile function - New
 export const deleteProfile = async (req, res) => {
     const userId = req.userId;
 
     try {
-        // Import Posts model (add this import at the top of your file)
-        // import postsModel from '../models/Posts.js';
+        const user = await userModel.findById(userId);
         
-        // Delete all user posts first
+        // Delete profile image from Cloudinary if exists
+        if (user.profileImagePublicId) {
+            try {
+                await deleteFromCloudinary(user.profileImagePublicId);
+            } catch (error) {
+                console.error('Error deleting profile image:', error);
+            }
+        }
+
+        // Delete background image from Cloudinary if exists
+        if (user.backgroundImagePublicId) {
+            try {
+                await deleteFromCloudinary(user.backgroundImagePublicId);
+            } catch (error) {
+                console.error('Error deleting background image:', error);
+            }
+        }
+        
+        // Delete all user posts
         await postsModel.deleteMany({ userId: userId });
         
         // Delete user account
