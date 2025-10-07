@@ -1,4 +1,4 @@
-import { Award, Bookmark, Camera, Clock, Compass, HeartHandshake, MapPin, MessageCircle, Mountain, Share2, Star, ChevronLeft, ChevronRight, Plus, Map, X, Flag, AlertTriangle } from 'lucide-react';
+import { Award, Bookmark, Camera, Clock, Compass, HeartHandshake, MapPin, MessageCircle, Mountain, Share2, Star, ChevronLeft, ChevronRight, Plus, Map, X, Flag, AlertTriangle, Edit2, Trash2, Check } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import InteractiveMap from './InteractiveMap';
@@ -12,6 +12,7 @@ const FullPostView = ({ post, isOpen, onClose }) => {
 
     const [liked, setLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(post?.likes?.length || 0);
+
     const [bookmarked, setBookmarked] = useState(false);
     const [showComments, setShowComments] = useState(false);
     const [comment, setComment] = useState('');
@@ -30,6 +31,12 @@ const FullPostView = ({ post, isOpen, onClose }) => {
     const [comments, setComments] = useState([]);
     const [replyingTo, setReplyingTo] = useState(null);
     const [replyText, setReplyText] = useState('');
+    
+    // NEW: Edit/Delete states
+    const [editingComment, setEditingComment] = useState(null);
+    const [editText, setEditText] = useState('');
+    const [deletingComment, setDeletingComment] = useState(null);
+    
     const captionRef = useRef(null);
 
     useEffect(() => {
@@ -45,7 +52,7 @@ const FullPostView = ({ post, isOpen, onClose }) => {
         if (post && user) {
             // Normalize both to strings before comparing
             const userHasLiked = post.likes?.some(
-            likeUserId => String(likeUserId) === String(user.id)
+                likeUserId => String(likeUserId) === String(user.id)
             );
 
             setLiked(userHasLiked);
@@ -140,6 +147,53 @@ const FullPostView = ({ post, isOpen, onClose }) => {
         }
     };
 
+    // NEW: Edit comment handler
+    const handleEditComment = async (commentId) => {
+        if (!editText.trim()) return;
+        try {
+            const response = await axios.put(
+                `http://localhost:5006/api/posts/${post._id}/comments/${commentId}`,
+                { text: editText },
+                { withCredentials: true }
+            );
+            if (response.data.success) {
+                setComments(comments.map(c => 
+                    c._id === commentId ? response.data.data : c
+                ));
+                setEditingComment(null);
+                setEditText('');
+            }
+        } catch (error) {
+            console.error('Error editing comment:', error);
+            alert(error.response?.data?.message || 'Failed to edit comment');
+        }
+    };
+
+    // NEW: Delete comment handler
+    const handleDeleteComment = async (commentId) => {
+        try {
+            const response = await axios.delete(
+                `http://localhost:5006/api/posts/${post._id}/comments/${commentId}`,
+                { withCredentials: true }
+            );
+            if (response.data.success) {
+                // Remove the deleted comment and its replies from state
+                setComments(comments.filter(c => 
+                    c._id !== commentId && c.parentId !== commentId
+                ));
+                setDeletingComment(null);
+            }
+        } catch (error) {
+            console.error('Error deleting comment:', error);
+            alert(error.response?.data?.message || 'Failed to delete comment');
+        }
+    };
+
+    // NEW: Check if current user owns the comment
+    const isCommentOwner = (commentUserId) => {
+        return user && String(commentUserId) === String(user.id);
+    };
+
     const getCommentUserInfo = (userObj) => {
         if (userObj && typeof userObj === 'object' && userObj.name) {
             return {
@@ -166,6 +220,7 @@ const FullPostView = ({ post, isOpen, onClose }) => {
         });
         return { topLevel, repliesMap };
     };
+    
     const { topLevel, repliesMap } = organizeComments(comments);
 
     const getUserDisplayInfo = (userObj) => {
@@ -206,7 +261,7 @@ const FullPostView = ({ post, isOpen, onClose }) => {
         setExpandedCaption(prev => !prev);
     };
 
-const toggleLike = async () => {
+    const toggleLike = async () => {
         if (!isLoggedIn) {
             alert('Please log in to like posts');
             return;
@@ -325,7 +380,7 @@ const toggleLike = async () => {
                             </p>
                         </div>
                     </div>
-                        <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2">
                         <button
                             onClick={handleMapClick}
                             className='px-3 py-1 text-black rounded-xl hover:text-teal-500 hover:bg-teal-50 transition-colors'
@@ -489,32 +544,31 @@ const toggleLike = async () => {
                     </div>
                 )}
 
-                
                 {/* Actions */}
                 <div className="p-6 border-t border-gray-100 mt-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-6">
                             {user ? (
-                            // Logged-in user: clickable button
-                            <button
-                                onClick={toggleLike}
-                                className={`flex items-center space-x-2 px-3 py-1 rounded-full transition-all ${
-                                liked
-                                    ? 'text-red-500 bg-red-50'
-                                    : 'text-gray-600 hover:text-red-500 hover:bg-red-50'
-                                }`}
-                            >
-                                <HeartHandshake className={`w-5 h-5 ${liked ? 'fill-current' : ''}`} />
-                                <span className="text-sm font-medium">
-                                {liked ? 'Finds Helpful' : 'Helpful'} ({likeCount})
-                                </span>
-                            </button>
+                                // Logged-in user: clickable button
+                                <button
+                                    onClick={toggleLike}
+                                    className={`flex items-center space-x-2 px-3 py-1 rounded-full transition-all ${
+                                        liked
+                                            ? 'text-red-500 bg-red-50'
+                                            : 'text-gray-600 hover:text-red-500 hover:bg-red-50'
+                                    }`}
+                                >
+                                    <HeartHandshake className={`w-5 h-5 ${liked ? 'fill-current' : ''}`} />
+                                    <span className="text-sm font-medium">
+                                        {liked ? 'Finds Helpful' : 'Helpful'} ({likeCount})
+                                    </span>
+                                </button>
                             ) : (
-                            // Logged-out user: just show like count in gray
-                            <div className="flex items-center space-x-2 px-3 py-1 rounded-full text-gray-600">
-                                <HeartHandshake className="w-5 h-5" />
-                                <span className="text-sm font-medium">Helpful ({post.likes ? post.likes.length : 0})</span>
-                            </div>
+                                // Logged-out user: just show like count in gray
+                                <div className="flex items-center space-x-2 px-3 py-1 rounded-full text-gray-600">
+                                    <HeartHandshake className="w-5 h-5" />
+                                    <span className="text-sm font-medium">Helpful ({post.likes ? post.likes.length : 0})</span>
+                                </div>
                             )}
 
                             <button
@@ -595,6 +649,9 @@ const toggleLike = async () => {
                                     {topLevel.map((comment) => {
                                         const commentUser = getCommentUserInfo(comment.userId);
                                         const commentReplies = repliesMap[comment._id] || [];
+                                        const isOwner = isCommentOwner(
+                                            typeof comment.userId === 'object' ? comment.userId._id : comment.userId
+                                        );
 
                                         return (
                                             <div key={comment._id} className="space-y-3">
@@ -604,27 +661,86 @@ const toggleLike = async () => {
                                                         {commentUser.avatar}
                                                     </div>
                                                     <div className="flex-1">
-                                                        <div className="bg-gray-100 rounded-2xl px-4 py-2">
-                                                            <p className="font-semibold text-sm text-gray-900">
-                                                                {commentUser.name}
-                                                            </p>
-                                                            <p className="text-gray-700 text-sm mt-1">
-                                                                {comment.text}
-                                                            </p>
-                                                        </div>
-                                                        <div className="flex items-center space-x-3 mt-1 px-2">
-                                                            <span className="text-xs text-gray-500">
-                                                                {new Date(comment.createdAt).toLocaleDateString()}
-                                                            </span>
-                                                            {isLoggedIn && (
-                                                                <button
-                                                                    onClick={() => setReplyingTo(comment._id)}
-                                                                    className="text-xs text-teal-600 hover:text-teal-700 font-medium"
-                                                                >
-                                                                    Reply
-                                                                </button>
-                                                            )}
-                                                        </div>
+                                                        {editingComment === comment._id ? (
+                                                            /* Edit Mode */
+                                                            <div className="space-y-2">
+                                                                <input
+                                                                    type="text"
+                                                                    value={editText}
+                                                                    onChange={(e) => setEditText(e.target.value)}
+                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                                                    autoFocus
+                                                                />
+                                                                <div className="flex space-x-2">
+                                                                    <button
+                                                                        onClick={() => handleEditComment(comment._id)}
+                                                                        disabled={!editText.trim()}
+                                                                        className="px-3 py-1 text-sm bg-teal-600 text-white rounded-full hover:bg-teal-700 disabled:opacity-50 flex items-center gap-1"
+                                                                    >
+                                                                        <Check className="w-3 h-3" />
+                                                                        Save
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setEditingComment(null);
+                                                                            setEditText('');
+                                                                        }}
+                                                                        className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                                                                    >
+                                                                        Cancel
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            /* Display Mode */
+                                                            <>
+                                                                <div className="bg-gray-100 rounded-2xl px-4 py-2">
+                                                                    <p className="font-semibold text-sm text-gray-900">
+                                                                        {commentUser.name}
+                                                                    </p>
+                                                                    <p className="text-gray-700 text-sm mt-1">
+                                                                        {comment.text}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="flex items-center space-x-3 mt-1 px-2">
+                                                                    <span className="text-xs text-gray-500">
+                                                                        {new Date(comment.createdAt).toLocaleDateString()}
+                                                                    </span>
+                                                                    {comment.updatedAt && (
+                                                                        <span className="text-xs text-gray-400">(edited)</span>
+                                                                    )}
+                                                                    {isLoggedIn && (
+                                                                        <button
+                                                                            onClick={() => setReplyingTo(comment._id)}
+                                                                            className="text-xs text-teal-600 hover:text-teal-700 font-medium"
+                                                                        >
+                                                                            Reply
+                                                                        </button>
+                                                                    )}
+                                                                    {isOwner && (
+                                                                        <>
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    setEditingComment(comment._id);
+                                                                                    setEditText(comment.text);
+                                                                                }}
+                                                                                className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                                                                            >
+                                                                                <Edit2 className="w-3 h-3" />
+                                                                                Edit
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => setDeletingComment(comment._id)}
+                                                                                className="text-xs text-red-600 hover:text-red-700 font-medium flex items-center gap-1"
+                                                                            >
+                                                                                <Trash2 className="w-3 h-3" />
+                                                                                Delete
+                                                                            </button>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                            </>
+                                                        )}
 
                                                         {/* Reply Input */}
                                                         {replyingTo === comment._id && (
@@ -663,23 +779,84 @@ const toggleLike = async () => {
                                                     <div className="ml-11 space-y-3">
                                                         {commentReplies.map((reply) => {
                                                             const replyUser = getCommentUserInfo(reply.userId);
+                                                            const isReplyOwner = isCommentOwner(
+                                                                typeof reply.userId === 'object' ? reply.userId._id : reply.userId
+                                                            );
+                                                            
                                                             return (
                                                                 <div key={reply._id} className="flex space-x-3">
                                                                     <div className="w-7 h-7 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
                                                                         {replyUser.avatar}
                                                                     </div>
                                                                     <div className="flex-1">
-                                                                        <div className="bg-gray-100 rounded-2xl px-3 py-2">
-                                                                            <p className="font-semibold text-xs text-gray-900">
-                                                                                {replyUser.name}
-                                                                            </p>
-                                                                            <p className="text-gray-700 text-sm mt-1">
-                                                                                {reply.text}
-                                                                            </p>
-                                                                        </div>
-                                                                        <span className="text-xs text-gray-500 px-2 mt-1 inline-block">
-                                                                            {new Date(reply.createdAt).toLocaleDateString()}
-                                                                        </span>
+                                                                        {editingComment === reply._id ? (
+                                                                            /* Edit Mode for Reply */
+                                                                            <div className="space-y-2">
+                                                                                <input
+                                                                                    type="text"
+                                                                                    value={editText}
+                                                                                    onChange={(e) => setEditText(e.target.value)}
+                                                                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                                                                    autoFocus
+                                                                                />
+                                                                                <div className="flex space-x-2">
+                                                                                    <button
+                                                                                        onClick={() => handleEditComment(reply._id)}
+                                                                                        disabled={!editText.trim()}
+                                                                                        className="px-2 py-1 text-xs bg-teal-600 text-white rounded-full hover:bg-teal-700 disabled:opacity-50"
+                                                                                    >
+                                                                                        Save
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={() => {
+                                                                                            setEditingComment(null);
+                                                                                            setEditText('');
+                                                                                        }}
+                                                                                        className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800"
+                                                                                    >
+                                                                                        Cancel
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <>
+                                                                                <div className="bg-gray-100 rounded-2xl px-3 py-2">
+                                                                                    <p className="font-semibold text-xs text-gray-900">
+                                                                                        {replyUser.name}
+                                                                                    </p>
+                                                                                    <p className="text-gray-700 text-sm mt-1">
+                                                                                        {reply.text}
+                                                                                    </p>
+                                                                                </div>
+                                                                                <div className="flex items-center space-x-2 px-2 mt-1">
+                                                                                    <span className="text-xs text-gray-500">
+                                                                                        {new Date(reply.createdAt).toLocaleDateString()}
+                                                                                    </span>
+                                                                                    {reply.updatedAt && (
+                                                                                        <span className="text-xs text-gray-400">(edited)</span>
+                                                                                    )}
+                                                                                    {isReplyOwner && (
+                                                                                        <>
+                                                                                            <button
+                                                                                                onClick={() => {
+                                                                                                    setEditingComment(reply._id);
+                                                                                                    setEditText(reply.text);
+                                                                                                }}
+                                                                                                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                                                                                            >
+                                                                                                Edit
+                                                                                            </button>
+                                                                                            <button
+                                                                                                onClick={() => setDeletingComment(reply._id)}
+                                                                                                className="text-xs text-red-600 hover:text-red-700 font-medium"
+                                                                                            >
+                                                                                                Delete
+                                                                                            </button>
+                                                                                        </>
+                                                                                    )}
+                                                                                </div>
+                                                                            </>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             );
@@ -695,6 +872,31 @@ const toggleLike = async () => {
                     </div>
                 </div>
 
+                {/* Delete Confirmation Modal */}
+                {deletingComment && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-70 p-4">
+                        <div className="bg-white rounded-xl p-6 max-w-md w-full">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Delete Comment</h3>
+                            <p className="text-gray-600 mb-6">
+                                Are you sure you want to delete this comment? This action cannot be undone.
+                            </p>
+                            <div className="flex justify-end space-x-3">
+                                <button
+                                    onClick={() => setDeletingComment(null)}
+                                    className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteComment(deletingComment)}
+                                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <InteractiveMap
                     isOpen={showMapModal}
