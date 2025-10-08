@@ -1,4 +1,5 @@
 import Posts from '../models/Posts.js';
+import userModel from '../models/userModel.js';
 import { 
     uploadMultipleToCloudinary, 
     deleteMultipleFromCloudinary,
@@ -333,10 +334,29 @@ export const deletePost = async (req, res) => {
 
 export const getAllPosts = async (req, res) => {
     try {
-        const { page = 1, limit = 10, location, sort = 'recent' } = req.query;
+        const { page = 1, limit = 10, location, sort = 'recent', search } = req.query;
 
         const filter = {};
-        if (location) {
+        
+        // Handle search parameter (for location and tags)
+        if (search) {
+            const searchTerm = search.trim();
+            
+            // Check if it's a tag search (starts with #)
+            if (searchTerm.startsWith('#')) {
+                const tag = searchTerm.substring(1); // Remove the # symbol
+                filter.tags = { $regex: tag, $options: 'i' };
+            } else {
+                // Search in both location and tags
+                filter.$or = [
+                    { location: { $regex: searchTerm, $options: 'i' } },
+                    { tags: { $regex: searchTerm, $options: 'i' } }
+                ];
+            }
+        }
+        
+        // Legacy location filter (keep for backward compatibility)
+        if (location && !search) {
             filter.location = { $regex: location, $options: 'i' };
         }
 
@@ -516,15 +536,22 @@ export const searchPosts = async (req, res) => {
       filter.location = { $regex: location, $options: "i" };
     }
 
-    // If user gives a tag, search inside tags array
+    // If user gives tags, search inside tags array with case-insensitive regex
     if (tag) {
-      filter.tags = { $in: [tag.toLowerCase()] };
+      const tags = Array.isArray(tag) ? tag : [tag];
+      filter.tags = { 
+        $in: tags.map(t => new RegExp(t, 'i'))
+      };
     }
 
+    console.log("Search filter:", JSON.stringify(filter, null, 2)); // Debug log
+
     const posts = await Posts.find(filter)
-      .populate("userId", "name email") // bring back name + email of post author
-      .populate("comments.userId", "name email") // also bring back comment authors
+      .populate("userId", "name email")
+      .populate("comments.userId", "name email")
       .sort({ createdAt: -1 });
+
+    console.log("Posts found:", posts.length); // Debug log
 
     res.status(200).json({ success: true, data: posts });
   } catch (err) {
@@ -708,6 +735,44 @@ export const getPostComments = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+export const getPlatformStats = async (req, res) => {
+    try {
+        // Total number of posts
+        const totalPosts = await Posts.countDocuments();
+
+        // Total number of users
+        const totalUsers = await userModel.countDocuments();
+
+        // Total number of unique locations
+        const uniqueLocations = await Posts.distinct('location');
+        const totalLocations = uniqueLocations.length;
+
+        // Total photos uploaded (sum of all imageUrls)
+        const postsWithImages = await Posts.find({}, 'imageUrls');
+        const totalPhotos = postsWithImages.reduce((sum, post) => {
+            return sum + (post.imageUrls ? post.imageUrls.length : 0);
+        }, 0);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalPosts,
+                totalUsers,
+                totalLocations,
+                totalPhotos
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching platform stats:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching stats',
             error: error.message
         });
     }
