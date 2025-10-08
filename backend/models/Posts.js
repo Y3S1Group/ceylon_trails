@@ -45,7 +45,8 @@ const postsSchema = new mongoose.Schema({
         text: { type: String, required: true },
         parentId: { type: Schema.Types.ObjectId, default: null },
         replies: [{ type: Schema.Types.ObjectId }],
-        createdAt: { type: Date, default: Date.now }
+        createdAt: { type: Date, default: Date.now },
+        updatedAt: { type: Date }  // New - Track when comment was edited
     }],
 }, { timestamps: true });
 

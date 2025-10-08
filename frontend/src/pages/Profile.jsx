@@ -359,12 +359,16 @@ const Profile = () => {
         {/* Profile Header */}
         <div className="relative">
           {/* Cover Photo */}
-          <div className="h-48 md:h-100 bg-black relative overflow-hidden -mt-24">
-            <img
-              src="https://images.unsplash.com/photo-1657946857561-f42916b66712?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-              alt="Cover"
-              className="w-full h-full object-cover opacity-35"
-            />
+          <div className="h-48 md:h-100 bg-gradient-to-r from-teal-400 to-blue-500 relative overflow-hidden -mt-24">
+            {currentUser.backgroundImage ? (
+              <img
+                src={currentUser.backgroundImage}
+                alt="Cover"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-r from-teal-400 to-blue-500 opacity-35" />
+            )}
             
             {/* Kebab Menu */}
             <div className="absolute top-44 right-10" ref={kebabMenuRef}>
