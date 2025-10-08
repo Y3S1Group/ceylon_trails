@@ -4,12 +4,12 @@ import FullPostView from './FullPostView';
 import SavedPost from './SavedPost';
 import { useAuth } from '../hooks/useAuth';
 
-const TrailPost = ({ onMapClick, endpoint="feed", showPagination = false, sortBy = 'recent' }) => {
+const TrailPost = ({ onMapClick, endpoint="feed", showPagination = false, sortBy = 'recent', searchQuery = '', currentPage = 1, onPageChange }) => {
     const { isLoggedIn } = useAuth();
 
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [page, setPage] = useState(1);
+    const [page, setPage] = useState(currentPage);
     const [totalPages, setTotalPages] = useState(null);
     const [selectedPost, setSelectedPost] = useState(null);
     const [showFullPost, setShowFullPost] = useState(false);
@@ -22,9 +22,15 @@ const TrailPost = ({ onMapClick, endpoint="feed", showPagination = false, sortBy
             try {
                 setLoading(true);
 
-                const url = endpoint === 'all'
+                let url = endpoint === 'all'
                     ? `http://localhost:5006/api/posts/all?page=${page}&limit=9&sort=${sortBy}`
                     : 'http://localhost:5006/api/posts/feed';
+                
+                // Add search query parameter if it exists
+                if (searchQuery && searchQuery.trim() !== '') {
+                    url += `&search=${encodeURIComponent(searchQuery)}`;
+                }
+                
                 const response = await fetch(url);
                 const data = await response.json();
                 
@@ -43,7 +49,7 @@ const TrailPost = ({ onMapClick, endpoint="feed", showPagination = false, sortBy
         };
 
         loadPosts();
-    }, [endpoint, page, sortBy]);
+    }, [endpoint, page, sortBy, searchQuery]); // Added searchQuery to dependencies
 
     const getUserDisplayInfo = (userObj) => {
         if (userObj && typeof userObj === 'object' && userObj.name) {
@@ -89,6 +95,18 @@ const TrailPost = ({ onMapClick, endpoint="feed", showPagination = false, sortBy
             alert('Please log in to save posts');
         }
     };
+
+    // Reset page when searchQuery changes
+    useEffect(() => {
+        setPage(1);
+    }, [searchQuery]);
+
+    // Sync with parent page if controlled
+    useEffect(() => {
+        if (currentPage !== page) {
+            setPage(currentPage);
+        }
+    }, [currentPage]);
 
     return (
         <div className="max-w-7xl mx-auto px-8 py-10 ">
