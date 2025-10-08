@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Folder, Grid, FolderOpen, Image as ImageIcon, Trash2, Heart, MessageCircle, ChevronLeft, Camera, MapPin, Clock, HeartHandshake, Mountain, Eye } from 'lucide-react';
+import { Folder, Grid, FolderOpen, Image as ImageIcon, Trash2, Heart, MessageCircle, ChevronLeft, Camera, MapPin, Clock, HeartHandshake, Mountain, Eye, ChevronDown, ArrowUpAZ, ArrowDownAZ, CalendarArrowUp, CalendarArrowDown, ArrowUpNarrowWide ,ArrowDownNarrowWide } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ImageViewer from '../components/ImageViewer';
-import FullPostView from '../components/FullPostView'; // Import FullPostView
+import FullPostView from '../components/FullPostView';
 import { useAuth } from '../hooks/useAuth';
 
 const Saved = () => {
@@ -13,6 +13,8 @@ const Saved = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [viewMode, setViewMode] = useState('folders');
+  const [filterBy, setFilterBy] = useState('date-desc');
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [imageViewer, setImageViewer] = useState({
     isOpen: false,
     images: [],
@@ -20,9 +22,17 @@ const Saved = () => {
   });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   
-  // Add state for FullPostView
   const [selectedPost, setSelectedPost] = useState(null);
   const [isFullPostOpen, setIsFullPostOpen] = useState(false);
+
+  const filterOptions = [
+    { value: 'name-asc', label: 'Name (A-Z)', icon: <ArrowDownAZ className='w-5'/> },
+    { value: 'name-desc', label: 'Name (Z-A)', icon: <ArrowUpAZ className='w-5'/> },
+    { value: 'date-desc', label: 'Newest First', icon: <CalendarArrowDown className='w-5'/> },
+    { value: 'date-asc', label: 'Oldest First', icon: <CalendarArrowUp className='w-5'/> },
+    { value: 'posts-desc', label: 'Most Posts', icon:  <ArrowDownNarrowWide className='w-5'/>},
+    { value: 'posts-asc', label: 'Least Posts', icon:  <ArrowUpNarrowWide className='w-5'/>}
+  ];
 
   useEffect(() => {
     if (user?.id) {
@@ -57,11 +67,31 @@ const Saved = () => {
     }
   };
 
-  // Handle post click to open in full view
+  // Sort folders based on filter
+  const getSortedFolders = () => {
+    const foldersCopy = [...folders];
+    
+    switch(filterBy) {
+      case 'name-asc':
+        return foldersCopy.sort((a, b) => a.name.localeCompare(b.name));
+      case 'name-desc':
+        return foldersCopy.sort((a, b) => b.name.localeCompare(a.name));
+      case 'date-desc':
+        return foldersCopy.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      case 'date-asc':
+        return foldersCopy.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      case 'posts-desc':
+        return foldersCopy.sort((a, b) => b.posts.length - a.posts.length);
+      case 'posts-asc':
+        return foldersCopy.sort((a, b) => a.posts.length - b.posts.length);
+      default:
+        return foldersCopy;
+    }
+  };
+
   const handlePostClick = (post) => {
     console.log('Post clicked:', post);
     
-    // Ensure the post has all required fields for FullPostView
     const fullPost = {
       _id: post._id || `temp_${Date.now()}`,
       caption: post.caption || '',
@@ -196,11 +226,13 @@ const Saved = () => {
     );
   }
 
+  const sortedFolders = getSortedFolders();
+
   return (
     <>
       <Navbar />
       <div className="min-h-screen bg-gray-50 pt-24">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-10 py-4">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Saved Posts</h1>
             <p className="text-gray-600">Organize and access your saved adventure posts</p>
@@ -226,6 +258,69 @@ const Saved = () => {
                       <div className="text-sm text-gray-600">Saved Posts</div>
                     </div>
                   </div>
+                  
+                  {/* Filter Dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                      className="flex items-center justify-between gap-2 bg-white border-2 border-gray-200 hover:border-teal-300 transition-all duration-200 shadow-xs hover:shadow-md rounded-2xl px-5 py-4 min-w-[150px]"
+                    >
+                      <div className="flex items-center space-x-2 flex-1 gap-2">
+                        <span className="font-medium text-teal-600 text-sm">
+                          {filterOptions.find(opt => opt.value === filterBy)?.icon || 'Sort By'}
+                        </span>
+                        <span className="font-medium text-gray-900 text-sm">
+                          {filterOptions.find(opt => opt.value === filterBy)?.label || 'Sort By'}
+                        </span>
+                      </div>
+                      <ChevronDown
+                        className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
+                          showFilterDropdown ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+
+                    {showFilterDropdown && (
+                      <>
+                        {/* Backdrop */}
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setShowFilterDropdown(false)}
+                        />
+
+                        {/* Dropdown Content */}
+                        <div className="absolute right-0 top-full mt-2 w-64 bg-white border-2 border-gray-200 rounded-2xl shadow-xl z-20 overflow-hidden">
+                          <div className="p-2">
+                            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
+                              Sort Folders By
+                            </div>
+                            {filterOptions.map((option) => (
+                              <button
+                                key={option.value}
+                                onClick={() => {
+                                  setFilterBy(option.value);
+                                  setShowFilterDropdown(false);
+                                }}
+                                className={`w-full flex items-center justify-between space-x-3 px-4 py-3 rounded-xl transition-all duration-150 ${
+                                  filterBy === option.value
+                                    ? 'bg-gradient-to-r from-teal-50 to-teal-100 text-teal-700 border border-teal-200'
+                                    : 'hover:bg-gray-50 text-gray-600'
+                                }`}
+                              >
+                                <div className="flex items-center space-x-2 gap-2">
+                                  <span>{option.icon}</span>
+                                  <span className="font-medium text-sm">{option.label}</span>
+                                </div>
+                                {filterBy === option.value && (
+                                  <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -239,7 +334,7 @@ const Saved = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {folders.map((folder) => (
+                  {sortedFolders.map((folder) => (
                     <div
                       key={folder._id}
                       className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
@@ -370,7 +465,6 @@ const Saved = () => {
                         className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"
                         onClick={() => handlePostClick(post)}
                       >
-                        {/* Image Preview */}
                         <div className="relative">
                           {previewImage ? (
                             <div className="relative">
@@ -392,12 +486,11 @@ const Saved = () => {
                             </div>
                           )}
                           
-                          {/* Delete button */}
                           <button
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              console.log('Delete button clicked for post:', post._id); // Debug log
+                              console.log('Delete button clicked for post:', post._id);
                               deletePostFromFolder(selectedFolder._id, post._id);
                             }}
                             onMouseDown={(e) => {
@@ -409,7 +502,6 @@ const Saved = () => {
                             <Trash2 className="w-4 h-4" />
                           </button>
                           
-                          {/* Overlay on hover */}
                           <div className="absolute inset-0 transition-all duration-300 flex items-center justify-center">
                             <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white rounded-full p-2">
                               <Eye className="w-5 h-5 text-gray-700" />
@@ -417,9 +509,7 @@ const Saved = () => {
                           </div>
                         </div>
 
-                        {/* Content */}
                         <div className="p-4">
-                          {/* User Info */}
                           <div className="flex items-center space-x-3 mb-3">
                             <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-700 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                               {userInfo.avatar}
@@ -433,14 +523,12 @@ const Saved = () => {
                             </div>
                           </div>
 
-                          {/* Caption */}
                           <div className="mb-3">
                             <p className="text-gray-700 text-sm line-clamp-3 leading-relaxed">
                               {truncateText(post.caption, 120)}
                             </p>
                           </div>
 
-                          {/* Tags */}
                           {post.tags && post.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mb-3">
                               {post.tags.slice(0, 3).map((tag, index) => (
@@ -456,7 +544,6 @@ const Saved = () => {
                             </div>
                           )}
 
-                          {/* Stats and Actions */}
                           <div className="flex items-center justify-between text-xs text-gray-500 border-t border-gray-100 pt-3">
                             <div className="flex items-center space-x-3">
                               <div className="flex items-center space-x-1">
@@ -482,7 +569,6 @@ const Saved = () => {
             </div>
           )}
 
-          {/* Delete Confirmation Modal */}
           {showDeleteConfirm && (
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-xl p-6 max-w-md w-full">
@@ -511,7 +597,6 @@ const Saved = () => {
           )}
         </div>
 
-        {/* FullPostView Modal */}
         <FullPostView
           post={selectedPost}
           isOpen={isFullPostOpen}
