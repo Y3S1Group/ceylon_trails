@@ -12,7 +12,8 @@ import {
     addReply, 
     getPostComments,
     editComment,        // NEW
-    deleteComment       // NEW
+    deleteComment,
+    getPlatformStats 
 } from '../controllers/postController.js';
 import userAuth from '../middleware/userauth.js';
 
@@ -23,6 +24,7 @@ router.get("/feed", getFeedPosts);
 router.get("/all", getAllPosts);
 
 router.get("/search", searchPosts);
+router.get('/stats', getPlatformStats);
 
 router.get("/:postId", getPost);
 router.put("/:postId", updatePost);

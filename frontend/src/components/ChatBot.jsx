@@ -199,7 +199,7 @@ const ChatBot = ({ isOpen, onClose, initialPrompt = "", onPostSelect, onPostClic
     }
     return {
       id: Date.now() + 2,
-      text: `Here are some amazing posts from travelers in ${location || 'this area'}:`,
+      text: `Posts from travelers on ${location || 'this area'}:`,
       sender: 'bot',
       timestamp: new Date(),
       posts: posts.slice(0, 3),

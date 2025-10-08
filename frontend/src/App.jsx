@@ -8,6 +8,10 @@ import Signup from './pages/Signup';
 import Profile from './pages/Profile';
 import Saved from './pages/Saved';
 import Dashboard from './pages/AdminDashboard';
+import AboutUs from './pages/AboutUs';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import CookiePolicy from './pages/CookiePolicy';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 
 function ProtectedRoute({ element }) {
@@ -53,6 +57,10 @@ function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
           <Route path="/saved" element={<ProtectedRoute element={<Saved />} />}/>
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/policy" element={<PrivacyPolicy/>} />
+          <Route path="/terms" element={<TermsOfService/>} />
+          <Route path="/cookie" element={<CookiePolicy/>} />
           <Route
             path="/admin"
             element={<ProtectedRoute element={<Dashboard />} />}
