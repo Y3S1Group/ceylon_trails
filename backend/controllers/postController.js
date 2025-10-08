@@ -773,6 +773,10 @@ export const getPlatformStats = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Server error while fetching stats',
+            error: error.message
+        });
+    }
+};
           
 export const editComment = async (req, res) => {
     try {
