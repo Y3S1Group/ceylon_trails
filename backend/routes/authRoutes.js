@@ -13,7 +13,10 @@ import {
     uploadProfileImage,         
     uploadBackgroundImage,      
     deleteProfileImage,         
-    deleteBackgroundImage       
+    deleteBackgroundImage,
+    sendForgotPasswordOtp,
+    verifyForgotPasswordOtp,
+    resetPassword
 } from '../controllers/authController.js';
 import { getUserPosts } from '../controllers/postController.js';
 import userAuth from '../middleware/userauth.js';
@@ -54,5 +57,10 @@ authRouter.post('/upload-profile-image', userAuth, upload.single('image'), uploa
 authRouter.post('/upload-background-image', userAuth, upload.single('image'), uploadBackgroundImage);
 authRouter.delete('/delete-profile-image', userAuth, deleteProfileImage);
 authRouter.delete('/delete-background-image', userAuth, deleteBackgroundImage);
+
+// Forgot Password routes (NO authentication needed)
+authRouter.post('/forgot-password/send-otp', sendForgotPasswordOtp);
+authRouter.post('/forgot-password/verify-otp', verifyForgotPasswordOtp);
+authRouter.post('/forgot-password/reset', resetPassword);
 
 export default authRouter;
