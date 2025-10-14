@@ -399,7 +399,9 @@ export const getAllPosts = async (req, res) => {
                     {
                         $project: {
                             'userId.password': 0,
-                            'userId.__v': 0
+                            'userId.__v': 0,
+                            'userId.verifyOtp': 0,
+                            'userId.verifyOtpExpires': 0
                         }
                     }
                 ]);
@@ -424,8 +426,8 @@ export const getAllPosts = async (req, res) => {
 
         // For recent and rated, use normal query
         const posts = await Posts.find(filter)
-            .populate('userId', 'name email')
-            .populate('comments.userId', 'name email')
+            .populate('userId', 'name email profileImage')
+            .populate('comments.userId', 'name email profileImage')
             .sort(sortOption)
             .limit(limit * 1)
             .skip((page - 1) * limit);
@@ -456,8 +458,8 @@ export const getFeedPosts = async (req, res) => {
         console.log('Fetching feed posts...');
         
         const posts = await Posts.find({})
-            .populate('userId', 'name email')
-            .populate('comments.userId', 'name email')
+            .populate('userId', 'name email profileImage')
+            .populate('comments.userId', 'name email profileImage')
             .sort({ 'likes': -1, createdAt: -1 })
             .limit(9);
         console.log('Found posts:', posts.length);
@@ -480,7 +482,7 @@ export const getUserPosts = async (req, res) => {
         const { userId } = req.params;
 
         const posts = await Posts.find({ userId }) 
-            .populate('userId', 'username email')
+            .populate('userId', 'username email profileImage')
             .sort({ createdAt: -1 })
         
         res.status(200).json({
@@ -502,8 +504,8 @@ export const getPost = async (req, res) => {
         const { postId } = req.params;
 
         const post = await Posts.findById(postId)
-            .populate('userId', 'username email')
-            .populate('comments.userId', 'username email');
+            .populate('userId', 'username email profileImage')
+            .populate('comments.userId', 'username email profileImage');
 
         if (!post) {
             return res.status(404).json({
@@ -547,8 +549,8 @@ export const searchPosts = async (req, res) => {
     console.log("Search filter:", JSON.stringify(filter, null, 2)); // Debug log
 
     const posts = await Posts.find(filter)
-      .populate("userId", "name email")
-      .populate("comments.userId", "name email")
+      .populate("userId", "name email profileImage")
+      .populate("comments.userId", "name email profileImage")
       .sort({ createdAt: -1 });
 
     console.log("Posts found:", posts.length); // Debug log
@@ -632,8 +634,11 @@ export const addComment = async (req, res) => {
         post.comments.push(newComment);
         await post.save();
 
-        await post.populate('comments.userId', 'name email');
-        const addedComment = post.comments[post.comments.length - 1];
+        // IMPORTANT: Refetch the post with population to ensure fresh data
+        const updatedPost = await Posts.findById(postId)
+            .populate('comments.userId', 'name email profileImage');
+
+        const addedComment = updatedPost.comments[updatedPost.comments.length - 1];
 
         res.status(201).json({
             success: true,
@@ -692,9 +697,12 @@ export const addReply = async (req, res) => {
         parentComment.replies.push(replyId);
 
         await post.save();
-        await post.populate('comments.userId', 'name email');
+        
+        // IMPORTANT: Refetch the post with population to ensure fresh data
+        const updatedPost = await Posts.findById(postId)
+            .populate('comments.userId', 'name email profileImage');
 
-        const addedReply = post.comments.id(replyId);
+        const addedReply = updatedPost.comments.id(replyId);
 
         res.status(201).json({
             success: true,
@@ -716,7 +724,7 @@ export const getPostComments = async (req, res) => {
         const { postId } = req.params;
 
         const post = await Posts.findById(postId)
-            .populate('comments.userId', 'name email');
+            .populate('comments.userId', 'name email profileImage');
 
         if (!post) {
             return res.status(404).json({
@@ -773,6 +781,9 @@ export const getPlatformStats = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Server error while fetching stats',
+        })
+    }
+};
           
 export const editComment = async (req, res) => {
     try {
@@ -818,7 +829,7 @@ export const editComment = async (req, res) => {
         comment.updatedAt = new Date();
 
         await post.save();
-        await post.populate('comments.userId', 'name email');
+        await post.populate('comments.userId', 'name email profileImage');
 
         const updatedComment = post.comments.id(commentId);
 

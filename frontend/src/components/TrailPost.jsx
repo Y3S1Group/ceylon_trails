@@ -52,16 +52,18 @@ const TrailPost = ({ onMapClick, endpoint="feed", showPagination = false, sortBy
     }, [endpoint, page, sortBy, searchQuery]); // Added searchQuery to dependencies
 
     const getUserDisplayInfo = (userObj) => {
-        if (userObj && typeof userObj === 'object' && userObj.name) {
+        if (userObj && typeof userObj === 'object') {
             return {
-                name: userObj.name,
-                avatar: userObj.name.charAt(0).toUpperCase()
+                name: userObj.name || 'Explorer',
+                avatar: userObj.name?.charAt(0).toUpperCase() || 'E',
+                profileImage: userObj.profileImage || null // Add this line
             };
         }
-    
+
         return {
             name: 'Explorer',
-            avatar: 'E'
+            avatar: 'E',
+            profileImage: null // Add this line
         };
     };
 
@@ -172,9 +174,17 @@ const TrailPost = ({ onMapClick, endpoint="feed", showPagination = false, sortBy
                                 <div className="p-4">
                                     {/* User Info */}
                                     <div className="flex items-center space-x-3 mb-3">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-700 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                                            {userInfo.avatar}
-                                        </div>
+                                        {userInfo.profileImage ? (
+                                            <img
+                                                src={userInfo.profileImage}
+                                                alt={userInfo.name}
+                                                className="w-8 h-8 rounded-full object-cover border-2 border-teal-600"
+                                            />
+                                        ) : (
+                                            <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-700 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                                                {userInfo.avatar}
+                                            </div>
+                                        )}
                                         <div className="flex-1 min-w-0">
                                             <p className="font-semibold text-gray-900 text-sm truncate">{userInfo.name}</p>
                                             <div className="flex items-center text-xs text-gray-500">

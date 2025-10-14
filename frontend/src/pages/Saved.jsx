@@ -436,19 +436,20 @@ const Saved = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {selectedFolder.posts.map((post) => {
-                    const getUserDisplayInfo = (userObj) => {
-                      if (userObj && typeof userObj === 'object' && (userObj.name || userObj.username)) {
-                        const displayName = userObj.name || userObj.username;
-                        return {
-                          name: displayName,
-                          avatar: displayName.charAt(0).toUpperCase()
-                        };
-                      }
+                  const getUserDisplayInfo = (userObj) => {
+                    if (userObj && typeof userObj === 'object') {
                       return {
-                        name: 'Explorer',
-                        avatar: 'E'
+                        name: userObj.name || userObj.username || 'Explorer',
+                        avatar: userObj.name?.charAt(0).toUpperCase() || userObj.username?.charAt(0).toUpperCase() || 'E',
+                        profileImage: userObj.profileImage || null
                       };
+                    }
+                    return {
+                      name: 'Explorer',
+                      avatar: 'E',
+                      profileImage: null
                     };
+                  };
 
                     const userInfo = getUserDisplayInfo(post.userId);
                     const postImages = post.imageUrls || [];
@@ -511,9 +512,17 @@ const Saved = () => {
 
                         <div className="p-4">
                           <div className="flex items-center space-x-3 mb-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-700 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                              {userInfo.avatar}
-                            </div>
+                            {userInfo.profileImage ? (
+                              <img
+                                src={userInfo.profileImage}
+                                alt={userInfo.name}
+                                className="w-8 h-8 rounded-full object-cover border-2 border-teal-600"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-700 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                                {userInfo.avatar}
+                              </div>
+                            )}
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-gray-900 text-sm truncate">{userInfo.name}</p>
                               <div className="flex items-center text-xs text-gray-500">
