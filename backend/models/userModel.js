@@ -21,7 +21,16 @@ const userSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }, 
     lastLogin: { type: Date, default: null },   
     loginCount: { type: Number, default: 0 },
-    isBlocked: { type: Boolean, default: false }
+    isBlocked: { type: Boolean, default: false },
+
+    resetPasswordOtp: {
+        type: String,
+        default: ''
+    },
+    resetPasswordOtpExpires: {
+        type: Number,
+        default: 0
+    }
 })
 
 const userModel = mongoose.model.user || mongoose.model('User', userSchema);

@@ -43,7 +43,7 @@ export const getUserFolders = async (req, res) => {
                 populate: { 
                     path: 'userId', 
                     // Include both name and username to handle different user models
-                    select: 'username name profilePic' 
+                    select: 'username name profileImage' 
                 }
             })
             .sort({ createdAt: -1 });

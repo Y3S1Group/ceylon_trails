@@ -133,7 +133,10 @@ const FullPostView = ({ post, isOpen, onClose }) => {
         try {
             const response = await axios.post(
                 `http://localhost:5006/api/posts/${post._id}/comments/${commentId}/reply`,
-                { text: replyText },
+                { 
+                    text: replyText,
+                    userId: user.id
+                },
                 { withCredentials: true }
             );
             if (response.data.success) {
@@ -198,12 +201,14 @@ const FullPostView = ({ post, isOpen, onClose }) => {
         if (userObj && typeof userObj === 'object' && userObj.name) {
             return {
                 name: userObj.name,
-                avatar: userObj.name.charAt(0).toUpperCase()
+                avatar: userObj.name.charAt(0).toUpperCase(),
+                profileImage: userObj.profileImage || null
             };
         }
         return {
             name: 'User',
-            avatar: 'U'
+            avatar: 'U',
+            profileImage: null
         };
     };
 
@@ -227,13 +232,15 @@ const FullPostView = ({ post, isOpen, onClose }) => {
         if (userObj && typeof userObj === 'object' && userObj.name) {
             return {
                 name: userObj.name,
-                avatar: userObj.name.charAt(0).toUpperCase()
+                avatar: userObj.name.charAt(0).toUpperCase(),
+                profileImage: userObj.profileImage || null  
             };
         }
-    
+
         return {
             name: 'Explorer',
-            avatar: 'E'
+            avatar: 'E',
+            profileImage: null  
         };
     };
 
@@ -364,12 +371,20 @@ const FullPostView = ({ post, isOpen, onClose }) => {
             <div className="bg-white rounded-2xl shadow-xl max-w-4xl max-h-[80vh] w-full overflow-y-auto">
                 {/* Header with close button */}
                 <div className="sticky top-0 bg-white border-b border-gray-100 p-4 flex items-center justify-between z-20">
-                    <div className="flex items-center space-x-4">
-                        <div className="relative">
+                <div className="flex items-center space-x-4">
+                    <div className="relative">
+                        {userInfo.profileImage ? (
+                            <img
+                                src={userInfo.profileImage}
+                                alt={userInfo.name}
+                                className="w-12 h-12 rounded-full object-cover border-2 border-teal-600"
+                            />
+                        ) : (
                             <div className="w-12 h-12 bg-gradient-to-br from-teal-600 to-teal-700 rounded-full flex items-center justify-center text-white font-semibold">
                                 {userInfo.avatar}
                             </div>
-                        </div>
+                        )}
+                    </div>
                         <div>
                             <div className="flex items-center space-x-2 mb-1">
                                 <h3 className="font-semibold text-gray-900">{userInfo.name}</h3>
@@ -622,8 +637,21 @@ const FullPostView = ({ post, isOpen, onClose }) => {
                                 {/* Comment Input - Only for logged-in users */}
                                 {isLoggedIn && (
                                     <form onSubmit={handleAddComment} className="flex space-x-3">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-700 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
-                                            {user?.name?.charAt(0).toUpperCase() || 'U'}
+                                        <div className="w-8 h-8 flex-shrink-0">
+                                            {user?.profileImage ? (
+                                                <img
+                                                    src={user.profileImage}
+                                                    alt={user.name}
+                                                    className="w-8 h-8 rounded-full object-cover border-2 border-teal-600"
+                                                    onError={(e) => {
+                                                        e.target.src = 'https://via.placeholder.com/40?text=User';
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-700 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                                                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="flex-1 flex space-x-2">
                                             <input
@@ -657,8 +685,21 @@ const FullPostView = ({ post, isOpen, onClose }) => {
                                             <div key={comment._id} className="space-y-3">
                                                 {/* Main Comment */}
                                                 <div className="flex space-x-3">
-                                                    <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
-                                                        {commentUser.avatar}
+                                                    <div className="w-8 h-8 flex-shrink-0">
+                                                        {commentUser.profileImage ? (
+                                                            <img
+                                                                src={commentUser.profileImage}
+                                                                alt={commentUser.name}
+                                                                className="w-8 h-8 rounded-full object-cover border-2 border-teal-600"
+                                                                onError={(e) => {
+                                                                    e.target.src = 'https://via.placeholder.com/40?text=User';
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                                                                {commentUser.avatar}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <div className="flex-1">
                                                         {editingComment === comment._id ? (
@@ -782,11 +823,24 @@ const FullPostView = ({ post, isOpen, onClose }) => {
                                                             const isReplyOwner = isCommentOwner(
                                                                 typeof reply.userId === 'object' ? reply.userId._id : reply.userId
                                                             );
-                                                            
+
                                                             return (
                                                                 <div key={reply._id} className="flex space-x-3">
-                                                                    <div className="w-7 h-7 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
-                                                                        {replyUser.avatar}
+                                                                    <div className="w-7 h-7 flex-shrink-0">
+                                                                        {replyUser.profileImage ? (
+                                                                            <img
+                                                                                src={replyUser.profileImage}
+                                                                                alt={replyUser.name}
+                                                                                className="w-7 h-7 rounded-full object-cover border-2 border-teal-600"
+                                                                                onError={(e) => {
+                                                                                    e.target.src = 'https://via.placeholder.com/40?text=User';
+                                                                                }}
+                                                                            />
+                                                                        ) : (
+                                                                            <div className="w-7 h-7 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                                                                {replyUser.avatar}
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                     <div className="flex-1">
                                                                         {editingComment === reply._id ? (

@@ -197,7 +197,7 @@ const Explore = ({ searchValue, setSearchValue, showSearchInNav, isSelected }) =
       <div className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Why Join TrailTales</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Why Join Ceylon Trails</h2>
             <p className="text-xl text-gray-600">Be part of Sri Lanka's premier exploration community</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

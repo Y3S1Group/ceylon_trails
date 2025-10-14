@@ -2,8 +2,26 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Bot, User, RotateCcw, MapPin, Heart, MessageCircle, BotMessageSquare, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const PostCard = ({ post, onPostClick }) => {
+  // Add getUserDisplayInfo to handle user info consistently
+  const getUserDisplayInfo = (userObj) => {
+    if (userObj && typeof userObj === 'object') {
+      return {
+        name: userObj.name || userObj.username || 'Explorer',
+        avatar: userObj.name?.charAt(0).toUpperCase() || userObj.username?.charAt(0).toUpperCase() || 'E',
+        profileImage: userObj.profileImage || null
+      };
+    }
+    return {
+      name: 'Explorer',
+      avatar: 'E',
+      profileImage: null
+    };
+  };
 
-const PostCard = ({ post, onPostClick }) => (
+  const userInfo = getUserDisplayInfo(post.userId);
+
+  return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -28,16 +46,39 @@ const PostCard = ({ post, onPostClick }) => (
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
       </div>
       <div className="p-3">
+        <div className="flex items-center space-x-3 mb-2">
+          {userInfo.profileImage ? (
+            <img
+              src={userInfo.profileImage}
+              alt={userInfo.name}
+              className="w-8 h-8 rounded-full object-cover border-2 border-teal-600"
+            />
+          ) : (
+            <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-700 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+              {userInfo.avatar}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-gray-900 text-sm truncate">{userInfo.name}</p>
+            <div className="flex items-center text-xs text-gray-500">
+              <MapPin className="w-3 h-3 mr-1" />
+              <span className="truncate">{post.location || 'Unknown Location'}</span>
+            </div>
+          </div>
+        </div>
         <h4 className="font-semibold text-gray-900 mb-1 text-sm line-clamp-2">
           {post.caption || post.title || post.description || 'Travel Experience'}
         </h4>
-        <div className="flex items-center text-gray-600 mb-2 text-xs">
-          <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
-          <span className="truncate">{post.location || 'Unknown Location'}</span>
-        </div>
         <div className="flex items-center justify-between text-xs text-gray-500">
           <div className="flex items-center space-x-3">
-              <span>{post.userId.name || 0}</span>
+            <div className="flex items-center space-x-1">
+              <Heart className="w-3 h-3" />
+              <span>{post.likes?.length || 0}</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <MessageCircle className="w-3 h-3" />
+              <span>{post.comments?.length || 0}</span>
+            </div>
           </div>
           <div className="flex items-center">
             <Calendar className="w-3 h-3 mr-1" />
@@ -47,6 +88,7 @@ const PostCard = ({ post, onPostClick }) => (
       </div>
     </motion.div>
   );
+};
 
 const ChatBot = ({ isOpen, onClose, initialPrompt = "", onPostSelect, onPostClick }) => {
   const [messages, setMessages] = useState([
@@ -91,16 +133,14 @@ const ChatBot = ({ isOpen, onClose, initialPrompt = "", onPostSelect, onPostClic
     if (isOpen && initialPrompt && !hasProcessedInitialPrompt) {
       const trimmedPrompt = initialPrompt.trim();
       if (trimmedPrompt) {
-        // Set the input message and automatically send it
         setInputMessage(trimmedPrompt);
         setTimeout(() => {
           handleSendMessage(trimmedPrompt);
-        }, 500); // Small delay to make it feel more natural
+        }, 500);
       }
       setHasProcessedInitialPrompt(true);
     }
     
-    // Reset when chat is closed
     if (!isOpen) {
       setHasProcessedInitialPrompt(false);
     }
@@ -123,7 +163,7 @@ const ChatBot = ({ isOpen, onClose, initialPrompt = "", onPostSelect, onPostClic
       }
       
       const data = await res.json();
-      console.log("AI Response:", data); // Debug log
+      console.log("AI Response:", data);
       
       if (data.success) return data;
       throw new Error("AI response failed");
@@ -133,7 +173,7 @@ const ChatBot = ({ isOpen, onClose, initialPrompt = "", onPostSelect, onPostClic
     }
   };
 
-  // Clear conversation on backend when clearing chat
+  // Clear conversation on backend
   const clearConversation = async () => {
     try {
       await fetch("http://localhost:5006/api/chat/clear", {
@@ -153,12 +193,10 @@ const ChatBot = ({ isOpen, onClose, initialPrompt = "", onPostSelect, onPostClic
       const params = new URLSearchParams();
       
       if (location && location.trim()) {
-        // Clean the location - remove common suffixes and make it more flexible
         const cleanLocation = location.trim().toLowerCase();
         params.append('location', cleanLocation);
       }
       if (tags && Array.isArray(tags) && tags.length > 0) {
-        // Add each tag as a separate parameter or combine them
         tags.forEach(tag => {
           if (tag && tag.trim()) {
             params.append('tag', tag.trim().toLowerCase());
@@ -167,8 +205,8 @@ const ChatBot = ({ isOpen, onClose, initialPrompt = "", onPostSelect, onPostClic
       }
       
       const finalUrl = url + params.toString();
-      console.log("Fetching posts from:", finalUrl); // Debug log
-      console.log("Search params:", { location, tags }); // Debug log
+      console.log("Fetching posts from:", finalUrl);
+      console.log("Search params:", { location, tags });
       
       const res = await fetch(finalUrl);
       if (!res.ok) {
@@ -176,10 +214,9 @@ const ChatBot = ({ isOpen, onClose, initialPrompt = "", onPostSelect, onPostClic
       }
       
       const data = await res.json();
-      console.log("Posts response:", data); // Debug log
-      console.log("Number of posts found:", data.data ? data.data.length : 0); 
+      console.log("Posts response:", data);
+      console.log("Number of posts found:", data.data ? data.data.length : 0);
       
-      // Return the posts array directly, whether it's empty or not
       return Array.isArray(data.data) ? data.data : [];
     } catch (err) {
       console.error("Post fetch error:", err);
@@ -225,9 +262,8 @@ const ChatBot = ({ isOpen, onClose, initialPrompt = "", onPostSelect, onPostClic
 
     try {
       const aiData = await sendMessageToAI(messageToSend);
-      console.log("Processed AI Data:", aiData); // Debug log
+      console.log("Processed AI Data:", aiData);
 
-      // Show AI reply
       const botMessage = {
         id: Date.now() + 1,
         text: aiData.reply,
@@ -236,22 +272,19 @@ const ChatBot = ({ isOpen, onClose, initialPrompt = "", onPostSelect, onPostClic
       };
       setMessages(prev => [...prev, botMessage]);
 
-      // Enhanced keyword processing - only fetch posts if explicitly requested
       if (aiData.keywords && aiData.keywords.showPosts) {
         const { location, tags } = aiData.keywords;
-        console.log("AI explicitly requested posts. Keywords extracted:", { location, tags }); // Debug log
+        console.log("AI explicitly requested posts. Keywords extracted:", { location, tags });
         
-        // Check if we have either location or tags
         const hasLocation = location && typeof location === 'string' && location.trim();
         const hasTags = tags && Array.isArray(tags) && tags.length > 0;
         
         if (hasLocation || hasTags) {
           console.log("Fetching posts with:", { location: hasLocation ? location : null, tags: hasTags ? tags : null });
           
-          // Add a small delay to make the interaction feel more natural
           setTimeout(async () => {
             const posts = await fetchPosts(hasLocation ? location : null, hasTags ? tags : null);
-            console.log("Fetched posts:", posts); // Debug log
+            console.log("Fetched posts:", posts);
             
             const postsMessage = createPostsMessage(posts, hasLocation ? location : (hasTags ? tags[0] : null));
             setMessages(prev => [...prev, postsMessage]);
@@ -288,10 +321,7 @@ const ChatBot = ({ isOpen, onClose, initialPrompt = "", onPostSelect, onPostClic
   };
 
   const clearChat = async () => {
-    // Clear conversation on backend
     await clearConversation();
-    
-    // Reset frontend state
     setMessages([
       {
         id: 1,
@@ -305,13 +335,16 @@ const ChatBot = ({ isOpen, onClose, initialPrompt = "", onPostSelect, onPostClic
   };
 
   const handlePostClick = (post) => {
-
     const fullPost = {
       _id: post._id || post.id || `temp_${Date.now()}`,
       caption: post.caption || post.title || post.description || '',
       location: post.location || 'Unknown Location',
       imageUrls: post.imageUrls || (post.image ? [post.image] : []),
-      userId: post.userId || { name: 'Explorer' },
+      userId: {
+        ...post.userId,
+        name: post.userId?.name || post.userId?.username || 'Explorer',
+        profileImage: post.userId?.profileImage || null
+      },
       createdAt: post.createdAt || new Date().toISOString(),
       likes: post.likes || [],
       comments: post.comments || [],
@@ -319,14 +352,12 @@ const ChatBot = ({ isOpen, onClose, initialPrompt = "", onPostSelect, onPostClic
       coordinates: post.coordinates || null
     };
     
-    console.log("Processed post for FullPostView:", fullPost); // Debug log
+    console.log("Processed post for FullPostView:", fullPost);
     
-    // Call the parent's onPostClick function to handle the modal
     if (onPostClick) {
       onPostClick(fullPost);
     }
     
-    // Also call the original onPostSelect if provided
     if (onPostSelect) onPostSelect(fullPost);
   };
 
@@ -342,7 +373,6 @@ const ChatBot = ({ isOpen, onClose, initialPrompt = "", onPostSelect, onPostClic
           transition={{ duration: 0.2 }}
           className="fixed inset-0 z-30 flex items-center justify-center p-4"
         >
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -350,9 +380,7 @@ const ChatBot = ({ isOpen, onClose, initialPrompt = "", onPostSelect, onPostClic
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={onClose}
           />
-          {/* Chat Container */}
           <motion.div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 w-full h-full max-w-4xl max-h-[85vh]">
-            {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-teal-600 text-white p-4 rounded-t-2xl flex items-center justify-between drop-shadow-lg">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
