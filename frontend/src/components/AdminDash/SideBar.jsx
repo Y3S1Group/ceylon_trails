@@ -51,15 +51,6 @@ export default function Sidebar({activeSection, setActiveSection}) {
           <Image size={20} />
           {!collapsed && <span>Posts</span>}
         </button>
-
-        <button
-          onClick={() => setActiveSection("settings")}
-          className={`flex items-center gap-3 p-2 rounded-lg w-full text-left 
-            ${activeSection === "settings" ? "bg-gray-800 text-white" : "hover:bg-gray-800"}`}
-        >
-          <Settings size={20} />
-          {!collapsed && <span>Settings</span>}
-        </button>
       </nav>
 
 
