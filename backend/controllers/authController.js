@@ -4,7 +4,8 @@ import 'dotenv/config';
 import userModel from '../models/userModel.js';
 import { text } from 'express';
 import transporter from '../config/nodemailer.js';
-import postsModel from '../models/Posts.js'; // to delete all posts of deleted acount
+import postsModel from '../models/Posts.js'; 
+import { uploadToCloudinary, deleteFromCloudinary } from '../config/cloudinary.js';
 
 
 export const register = async (req, res) => {
@@ -90,7 +91,9 @@ export const login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        username: user.username || user.name
+        username: user.username || user.name,
+        profileImage: user.profileImage || '',
+        backgroundImage: user.backgroundImage || ''
       },
     });
   } catch (error) {
@@ -209,6 +212,8 @@ export const getCurrentUser = async (req, res) => {
         name: user.name,
         email: user.email,
         username: user.username || user.name,
+        profileImage: user.profileImage || '',
+        backgroundImage: user.backgroundImage || ''
       }
     });
   } catch (error) {
@@ -256,15 +261,188 @@ export const updateProfile = async (req, res) => {
     }
 };
 
-//delete user profile function
+// Upload Profile Image - New
+export const uploadProfileImage = async (req, res) => {
+    const userId = req.userId;
+
+    try {
+        if (!req.file) {
+            return res.json({ success: false, message: 'No image file provided' });
+        }
+
+        const user = await userModel.findById(userId);
+        if (!user) {
+            return res.json({ success: false, message: 'User not found' });
+        }
+
+        // Delete old profile image from Cloudinary if exists
+        if (user.profileImagePublicId) {
+            try {
+                await deleteFromCloudinary(user.profileImagePublicId);
+            } catch (error) {
+                console.error('Error deleting old profile image:', error);
+            }
+        }
+
+        // Upload new image to Cloudinary
+        const uploadResult = await uploadToCloudinary(req.file.buffer, req.file.originalname);
+
+        // Update user with new image
+        user.profileImage = uploadResult.url;
+        user.profileImagePublicId = uploadResult.publicId;
+        await user.save();
+
+        return res.json({
+            success: true,
+            message: 'Profile image uploaded successfully',
+            profileImage: uploadResult.url
+        });
+
+    } catch (error) {
+        return res.json({ success: false, message: error.message });
+    }
+};
+
+// Upload Background Image - New
+export const uploadBackgroundImage = async (req, res) => {
+    const userId = req.userId;
+
+    try {
+        if (!req.file) {
+            return res.json({ success: false, message: 'No image file provided' });
+        }
+
+        const user = await userModel.findById(userId);
+        if (!user) {
+            return res.json({ success: false, message: 'User not found' });
+        }
+
+        // Delete old background image from Cloudinary if exists
+        if (user.backgroundImagePublicId) {
+            try {
+                await deleteFromCloudinary(user.backgroundImagePublicId);
+            } catch (error) {
+                console.error('Error deleting old background image:', error);
+            }
+        }
+
+        // Upload new image to Cloudinary
+        const uploadResult = await uploadToCloudinary(req.file.buffer, req.file.originalname);
+
+        // Update user with new image
+        user.backgroundImage = uploadResult.url;
+        user.backgroundImagePublicId = uploadResult.publicId;
+        await user.save();
+
+        return res.json({
+            success: true,
+            message: 'Background image uploaded successfully',
+            backgroundImage: uploadResult.url
+        });
+
+    } catch (error) {
+        return res.json({ success: false, message: error.message });
+    }
+};
+
+// Delete Profile Image - New
+export const deleteProfileImage = async (req, res) => {
+    const userId = req.userId;
+
+    try {
+        const user = await userModel.findById(userId);
+        if (!user) {
+            return res.json({ success: false, message: 'User not found' });
+        }
+
+        if (!user.profileImagePublicId) {
+            return res.json({ success: false, message: 'No profile image to delete' });
+        }
+
+        // Delete from Cloudinary
+        try {
+            await deleteFromCloudinary(user.profileImagePublicId);
+        } catch (error) {
+            console.error('Error deleting from Cloudinary:', error);
+        }
+
+        // Update user
+        user.profileImage = '';
+        user.profileImagePublicId = '';
+        await user.save();
+
+        return res.json({
+            success: true,
+            message: 'Profile image deleted successfully'
+        });
+
+    } catch (error) {
+        return res.json({ success: false, message: error.message });
+    }
+};
+
+// Delete Background Image - New
+export const deleteBackgroundImage = async (req, res) => {
+    const userId = req.userId;
+
+    try {
+        const user = await userModel.findById(userId);
+        if (!user) {
+            return res.json({ success: false, message: 'User not found' });
+        }
+
+        if (!user.backgroundImagePublicId) {
+            return res.json({ success: false, message: 'No background image to delete' });
+        }
+
+        // Delete from Cloudinary
+        try {
+            await deleteFromCloudinary(user.backgroundImagePublicId);
+        } catch (error) {
+            console.error('Error deleting from Cloudinary:', error);
+        }
+
+        // Update user
+        user.backgroundImage = '';
+        user.backgroundImagePublicId = '';
+        await user.save();
+
+        return res.json({
+            success: true,
+            message: 'Background image deleted successfully'
+        });
+
+    } catch (error) {
+        return res.json({ success: false, message: error.message });
+    }
+};
+
+//delete user profile function - New
 export const deleteProfile = async (req, res) => {
     const userId = req.userId;
 
     try {
-        // Import Posts model (add this import at the top of your file)
-        // import postsModel from '../models/Posts.js';
+        const user = await userModel.findById(userId);
         
-        // Delete all user posts first
+        // Delete profile image from Cloudinary if exists
+        if (user.profileImagePublicId) {
+            try {
+                await deleteFromCloudinary(user.profileImagePublicId);
+            } catch (error) {
+                console.error('Error deleting profile image:', error);
+            }
+        }
+
+        // Delete background image from Cloudinary if exists
+        if (user.backgroundImagePublicId) {
+            try {
+                await deleteFromCloudinary(user.backgroundImagePublicId);
+            } catch (error) {
+                console.error('Error deleting background image:', error);
+            }
+        }
+        
+        // Delete all user posts
         await postsModel.deleteMany({ userId: userId });
         
         // Delete user account
@@ -335,3 +513,123 @@ export const adminRegister = async (req, res) => {
     }
 };
 
+// Add these functions to your authController.js
+
+export const sendForgotPasswordOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.json({ success: false, message: 'Email is required' });
+    }
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.json({ success: false, message: 'User not found' });
+    }
+
+    // Generate OTP
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    
+    // Store OTP and expiry (2 minutes = 120 seconds)
+    user.resetPasswordOtp = otp;
+    user.resetPasswordOtpExpires = Date.now() + 2 * 60 * 1000; // 2 minutes
+
+    await user.save();
+
+    // Send OTP to email
+    const mailOptions = {
+      from: process.env.SENDER_EMAIL,
+      to: email,
+      subject: 'Password Reset OTP',
+      text: `Your password reset OTP is ${otp}. This OTP is valid for 2 minutes.`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({ 
+      success: true, 
+      message: 'OTP sent to your email',
+      email: email // Return email for next step
+    });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
+export const verifyForgotPasswordOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.json({ success: false, message: 'Email and OTP are required' });
+    }
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.json({ success: false, message: 'User not found' });
+    }
+
+    // Check if OTP is correct
+    if (user.resetPasswordOtp !== otp) {
+      return res.json({ success: false, message: 'Invalid OTP' });
+    }
+
+    // Check if OTP has expired
+    if (user.resetPasswordOtpExpires < Date.now()) {
+      return res.json({ success: false, message: 'OTP has expired' });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'OTP verified successfully',
+      verified: true
+    });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.json({ success: false, message: 'All fields are required' });
+    }
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.json({ success: false, message: 'User not found' });
+    }
+
+    // Verify OTP again
+    if (user.resetPasswordOtp !== otp) {
+      return res.json({ success: false, message: 'Invalid OTP' });
+    }
+
+    if (user.resetPasswordOtpExpires < Date.now()) {
+      return res.json({ success: false, message: 'OTP has expired' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password and clear OTP
+    user.password = hashedPassword;
+    user.resetPasswordOtp = '';
+    user.resetPasswordOtpExpires = 0;
+
+    await user.save();
+
+    res.json({ 
+      success: true, 
+      message: 'Password reset successfully'
+    });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};

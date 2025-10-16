@@ -3,9 +3,11 @@ import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { motion } from 'framer-motion';
+import ForgotPasswordModal from '../components/ForgetPasword';
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -168,24 +170,14 @@ const LoginPage = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center pl-2">
-              <input
-                id="rememberMe"
-                name="rememberMe"
-                type="checkbox"
-                checked={formData.rememberMe}
-                onChange={handleInputChange}
-                className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-white/20 rounded bg-white/5"
-                disabled={loading}
-              />
-              <label htmlFor="rememberMe" className="ml-2 block text-sm text-white/90">
-                Remember me
-              </label>
-            </div>
-            <a href="#" className="text-sm text-teal-400 hover:text-teal-300 transition duration-200 pr-2">
+          <div className="flex items-center justify-end">
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(true)}
+              className="text-sm text-teal-400 hover:text-teal-300 transition duration-200 pr-2"
+            >
               Forgot password?
-            </a>
+            </button>
           </div>
 
           <button
@@ -204,6 +196,11 @@ const LoginPage = () => {
           </a>
         </p>
       </motion.div>
+
+      <ForgotPasswordModal 
+        isOpen={showForgotPassword} 
+        onClose={() => setShowForgotPassword(false)} 
+      />
     </div>
   );
 };

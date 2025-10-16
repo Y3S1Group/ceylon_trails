@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Folder, Grid, FolderOpen, Image as ImageIcon, Trash2, Heart, MessageCircle, ChevronLeft } from 'lucide-react';
+import { Folder, Grid, FolderOpen, Image as ImageIcon, Trash2, Heart, MessageCircle, ChevronLeft, Camera, MapPin, Clock, HeartHandshake, Mountain, Eye, ChevronDown, ArrowUpAZ, ArrowDownAZ, CalendarArrowUp, CalendarArrowDown, ArrowUpNarrowWide ,ArrowDownNarrowWide } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ImageViewer from '../components/ImageViewer';
+import FullPostView from '../components/FullPostView';
 import { useAuth } from '../hooks/useAuth';
 
 const Saved = () => {
@@ -12,16 +13,30 @@ const Saved = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [viewMode, setViewMode] = useState('folders');
+  const [filterBy, setFilterBy] = useState('date-desc');
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [imageViewer, setImageViewer] = useState({
     isOpen: false,
     images: [],
     currentIndex: 0
   });
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null); // { type: 'folder'/'post', folderId, postId }
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [isFullPostOpen, setIsFullPostOpen] = useState(false);
+
+  const filterOptions = [
+    { value: 'name-asc', label: 'Name (A-Z)', icon: <ArrowDownAZ className='w-5'/> },
+    { value: 'name-desc', label: 'Name (Z-A)', icon: <ArrowUpAZ className='w-5'/> },
+    { value: 'date-desc', label: 'Newest First', icon: <CalendarArrowDown className='w-5'/> },
+    { value: 'date-asc', label: 'Oldest First', icon: <CalendarArrowUp className='w-5'/> },
+    { value: 'posts-desc', label: 'Most Posts', icon:  <ArrowDownNarrowWide className='w-5'/>},
+    { value: 'posts-asc', label: 'Least Posts', icon:  <ArrowUpNarrowWide className='w-5'/>}
+  ];
 
   useEffect(() => {
     if (user?.id) {
-      console.log('User ID:', user.id); // Debug log
+      console.log('User ID:', user.id);
       fetchFolders();
     } else {
       setError('Please log in to view saved posts');
@@ -38,7 +53,7 @@ const Saved = () => {
         credentials: 'include'
       });
       const data = await response.json();
-      console.log('Fetch folders response:', data); // Debug log
+      console.log('Fetch folders response:', data);
       if (response.ok && data.success) {
         setFolders(data.folders || []);
       } else {
@@ -50,6 +65,53 @@ const Saved = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Sort folders based on filter
+  const getSortedFolders = () => {
+    const foldersCopy = [...folders];
+    
+    switch(filterBy) {
+      case 'name-asc':
+        return foldersCopy.sort((a, b) => a.name.localeCompare(b.name));
+      case 'name-desc':
+        return foldersCopy.sort((a, b) => b.name.localeCompare(a.name));
+      case 'date-desc':
+        return foldersCopy.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      case 'date-asc':
+        return foldersCopy.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      case 'posts-desc':
+        return foldersCopy.sort((a, b) => b.posts.length - a.posts.length);
+      case 'posts-asc':
+        return foldersCopy.sort((a, b) => a.posts.length - b.posts.length);
+      default:
+        return foldersCopy;
+    }
+  };
+
+  const handlePostClick = (post) => {
+    console.log('Post clicked:', post);
+    
+    const fullPost = {
+      _id: post._id || `temp_${Date.now()}`,
+      caption: post.caption || '',
+      location: post.location || 'Unknown Location',
+      imageUrls: post.imageUrls || [],
+      userId: post.userId || { name: 'Explorer' },
+      createdAt: post.createdAt || new Date().toISOString(),
+      likes: post.likes || [],
+      comments: post.comments || [],
+      tags: post.tags || [],
+      coordinates: post.coordinates || null
+    };
+    
+    setSelectedPost(fullPost);
+    setIsFullPostOpen(true);
+  };
+
+  const closeFullPost = () => {
+    setIsFullPostOpen(false);
+    setSelectedPost(null);
   };
 
   const deleteFolder = async (folderId) => {
@@ -73,7 +135,7 @@ const Saved = () => {
           body: JSON.stringify({ userId: user.id })
         });
         const data = await response.json();
-        console.log('Delete folder response:', data); // Debug log
+        console.log('Delete folder response:', data);
         if (response.ok && data.success) {
           setFolders(folders.filter(f => f._id !== folderId));
           if (selectedFolder && selectedFolder._id === folderId) {
@@ -92,7 +154,7 @@ const Saved = () => {
           body: JSON.stringify({ userId: user.id })
         });
         const data = await response.json();
-        console.log('Delete post from folder response:', data); // Debug log
+        console.log('Delete post from folder response:', data);
         if (response.ok && data.success) {
           setFolders(prevFolders =>
             prevFolders.map(folder =>
@@ -164,11 +226,13 @@ const Saved = () => {
     );
   }
 
+  const sortedFolders = getSortedFolders();
+
   return (
     <>
       <Navbar />
       <div className="min-h-screen bg-gray-50 pt-24">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-10 py-4">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Saved Posts</h1>
             <p className="text-gray-600">Organize and access your saved adventure posts</p>
@@ -194,6 +258,69 @@ const Saved = () => {
                       <div className="text-sm text-gray-600">Saved Posts</div>
                     </div>
                   </div>
+                  
+                  {/* Filter Dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                      className="flex items-center justify-between gap-2 bg-white border-2 border-gray-200 hover:border-teal-300 transition-all duration-200 shadow-xs hover:shadow-md rounded-2xl px-5 py-4 min-w-[150px]"
+                    >
+                      <div className="flex items-center space-x-2 flex-1 gap-2">
+                        <span className="font-medium text-teal-600 text-sm">
+                          {filterOptions.find(opt => opt.value === filterBy)?.icon || 'Sort By'}
+                        </span>
+                        <span className="font-medium text-gray-900 text-sm">
+                          {filterOptions.find(opt => opt.value === filterBy)?.label || 'Sort By'}
+                        </span>
+                      </div>
+                      <ChevronDown
+                        className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
+                          showFilterDropdown ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+
+                    {showFilterDropdown && (
+                      <>
+                        {/* Backdrop */}
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setShowFilterDropdown(false)}
+                        />
+
+                        {/* Dropdown Content */}
+                        <div className="absolute right-0 top-full mt-2 w-64 bg-white border-2 border-gray-200 rounded-2xl shadow-xl z-20 overflow-hidden">
+                          <div className="p-2">
+                            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
+                              Sort Folders By
+                            </div>
+                            {filterOptions.map((option) => (
+                              <button
+                                key={option.value}
+                                onClick={() => {
+                                  setFilterBy(option.value);
+                                  setShowFilterDropdown(false);
+                                }}
+                                className={`w-full flex items-center justify-between space-x-3 px-4 py-3 rounded-xl transition-all duration-150 ${
+                                  filterBy === option.value
+                                    ? 'bg-gradient-to-r from-teal-50 to-teal-100 text-teal-700 border border-teal-200'
+                                    : 'hover:bg-gray-50 text-gray-600'
+                                }`}
+                              >
+                                <div className="flex items-center space-x-2 gap-2">
+                                  <span>{option.icon}</span>
+                                  <span className="font-medium text-sm">{option.label}</span>
+                                </div>
+                                {filterBy === option.value && (
+                                  <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -207,7 +334,7 @@ const Saved = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {folders.map((folder) => (
+                  {sortedFolders.map((folder) => (
                     <div
                       key={folder._id}
                       className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
@@ -219,14 +346,12 @@ const Saved = () => {
                       <div className="relative h-32 bg-gray-100 overflow-hidden">
                         {folder.posts.length > 0 && folder.posts[0].imageUrls ? (
                           folder.posts.length === 1 ? (
-                            // Single post - show one image
                             <img
                               src={folder.posts[0].imageUrls[0]}
                               alt={folder.posts[0].caption}
                               className="object-cover h-full w-full"
                             />
                           ) : (
-                            // Multiple posts - show grid of up to 4 images
                             <div className="grid grid-cols-2 gap-0.5 h-full">
                               {folder.posts.slice(0, 4).map((post, index) => (
                                 <div key={index} className={`
@@ -310,66 +435,149 @@ const Saved = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {selectedFolder.posts.map((post) => (
-                    <div key={post._id} className="bg-white rounded-xl shadow-sm overflow-hidden">
-                      <div className="relative">
-                        <img
-                          src={post.imageUrls[0]}
-                          alt={post.caption}
-                          className="w-full h-64 object-cover cursor-pointer"
-                          onClick={() => openImageViewer(post.imageUrls, 0)}
-                        />
-                        {post.imageUrls.length > 1 && (
-                          <div className="absolute top-3 right-3 bg-black/70 text-white px-2 py-1 rounded-lg text-sm">
-                            +{post.imageUrls.length - 1}
-                          </div>
-                        )}
-                        <button
-                          onClick={() => deletePostFromFolder(selectedFolder._id, post._id)}
-                          className="absolute top-3 left-3 bg-black/70 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <div className="p-4">
-                        <p className="text-gray-900 text-sm mb-3 line-clamp-2">
-                          {post.caption}
-                        </p>
-                        <div className="flex items-center justify-between text-gray-500">
-                          <div className="flex items-center space-x-4 text-sm">
-                            <div className="flex items-center">
-                              <Heart className="w-4 h-4 mr-1" />
-                              {post.likes?.length || 0}
+                  {selectedFolder.posts.map((post) => {
+                  const getUserDisplayInfo = (userObj) => {
+                    if (userObj && typeof userObj === 'object') {
+                      return {
+                        name: userObj.name || userObj.username || 'Explorer',
+                        avatar: userObj.name?.charAt(0).toUpperCase() || userObj.username?.charAt(0).toUpperCase() || 'E',
+                        profileImage: userObj.profileImage || null
+                      };
+                    }
+                    return {
+                      name: 'Explorer',
+                      avatar: 'E',
+                      profileImage: null
+                    };
+                  };
+
+                    const userInfo = getUserDisplayInfo(post.userId);
+                    const postImages = post.imageUrls || [];
+                    const previewImage = postImages.length > 0 ? postImages[0] : null;
+                    
+                    const truncateText = (text, maxLength = 100) => {
+                      if (!text || text.length <= maxLength) return text;
+                      return text.substring(0, maxLength) + '...';
+                    };
+
+                    return (
+                      <div 
+                        key={post._id} 
+                        className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                        onClick={() => handlePostClick(post)}
+                      >
+                        <div className="relative">
+                          {previewImage ? (
+                            <div className="relative">
+                              <img
+                                src={previewImage}
+                                alt="Post preview"
+                                className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                              {postImages.length > 1 && (
+                                <div className="absolute top-2 right-2 bg-black/60 bg-opacity-70 text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1">
+                                  <Camera className="w-3 h-3" />
+                                  <span>{postImages.length}</span>
+                                </div>
+                              )}
                             </div>
-                            <div className="flex items-center">
-                              <MessageCircle className="w-4 h-4 mr-1" />
-                              {post.comments?.length || 0}
+                          ) : (
+                            <div className="w-full h-48 bg-gradient-to-br from-teal-100 to-teal-200 flex items-center justify-center">
+                              <Mountain className="w-12 h-12 text-teal-600" />
+                            </div>
+                          )}
+                          
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log('Delete button clicked for post:', post._id);
+                              deletePostFromFolder(selectedFolder._id, post._id);
+                            }}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                            className="absolute top-2 left-2 bg-black/60 text-white p-2 rounded-full hover:bg-red-600 transition-colors z-20"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                          
+                          <div className="absolute inset-0 transition-all duration-300 flex items-center justify-center">
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white rounded-full p-2">
+                              <Eye className="w-5 h-5 text-gray-700" />
                             </div>
                           </div>
                         </div>
-                        {post.userId && (
-                          <div className="mt-3 pt-3 border-t border-gray-100">
-                            <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 bg-teal-600 rounded-full flex items-center justify-center">
-                                <span className="text-xs text-white font-medium">
-                                  {post.userId.username?.charAt(0).toUpperCase() || 'U'}
-                                </span>
+
+                        <div className="p-4">
+                          <div className="flex items-center space-x-3 mb-3">
+                            {userInfo.profileImage ? (
+                              <img
+                                src={userInfo.profileImage}
+                                alt={userInfo.name}
+                                className="w-8 h-8 rounded-full object-cover border-2 border-teal-600"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-700 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                                {userInfo.avatar}
                               </div>
-                              <span className="text-sm text-gray-600">
-                                @{post.userId.username || 'Unknown'}
-                              </span>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-gray-900 text-sm truncate">{userInfo.name}</p>
+                              <div className="flex items-center text-xs text-gray-500">
+                                <MapPin className="w-3 h-3 mr-1" />
+                                <span className="truncate">{post.location || 'Unknown Location'}</span>
+                              </div>
                             </div>
                           </div>
-                        )}
+
+                          <div className="mb-3">
+                            <p className="text-gray-700 text-sm line-clamp-3 leading-relaxed">
+                              {truncateText(post.caption, 120)}
+                            </p>
+                          </div>
+
+                          {post.tags && post.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-3">
+                              {post.tags.slice(0, 3).map((tag, index) => (
+                                <span key={index} className="bg-teal-100 px-2 py-0.5 rounded-full text-black/70 text-xs font-medium">
+                                  #{tag}
+                                </span>
+                              ))}
+                              {post.tags.length > 3 && (
+                                <span className="text-xs text-gray-500 px-2 py-0.5">
+                                  +{post.tags.length - 3} more
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          <div className="flex items-center justify-between text-xs text-gray-500 border-t border-gray-100 pt-3">
+                            <div className="flex items-center space-x-3">
+                              <div className="flex items-center space-x-1">
+                                <HeartHandshake className="w-3 h-3" />
+                                <span>{post.likes?.length || 0}</span>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <MessageCircle className="w-3 h-3" />
+                                <span>{post.comments?.length || 0}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Clock className="w-3 h-3" />
+                              <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
           )}
 
-          {/* Delete Confirmation Modal */}
           {showDeleteConfirm && (
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-xl p-6 max-w-md w-full">
@@ -397,6 +605,12 @@ const Saved = () => {
             </div>
           )}
         </div>
+
+        <FullPostView
+          post={selectedPost}
+          isOpen={isFullPostOpen}
+          onClose={closeFullPost}
+        />
 
         <ImageViewer
           isOpen={imageViewer.isOpen}
