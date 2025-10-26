@@ -24,12 +24,25 @@ A travel companion platform built with the MERN stack where users can document, 
 - **[React.js](https://reactjs.org/)** – Fast, component-based UI   
 - **[Tailwind CSS](https://tailwindcss.com/)** – Styling UI components  
 - **[React Router DOM](https://reactrouter.com/)** – Client-side routing  
+- **[Framer Motion](https://www.framer.com/motion/)** – Animation library
+- **[Leaflet](https://leafletjs.com/)** & **[React Leaflet](https://react-leaflet.js.org/)** – Interactive maps
+- **[Leaflet Routing Machine](https://www.liedman.net/leaflet-routing-machine/)** – Map routing
+- **[Axios](https://axios-http.com/)** – HTTP client for API requests
+- **[React Player](https://www.npmjs.com/package/react-player)** – Media player component
+- **[Lucide React](https://lucide.dev/)** – Icon library
+- **[Vite](https://vitejs.dev/)** – Build tool and dev server  
 
 
 ### Backend
 - **[Node.js](https://nodejs.org/)** & **[Express.js](https://expressjs.com/)** – Server-side logic  
 - **[MongoDB](https://www.mongodb.com/)** & **[Mongoose](https://mongoosejs.com/)** – Database and ODM  
-- **[CORS](https://www.npmjs.com/package/cors), [Body-Parser](https://www.npmjs.com/package/body-parser), [Cookie-Parser](https://www.npmjs.com/package/cookie-parser), [Dotenv](https://www.npmjs.com/package/dotenv)** – Backend utilities
+- **[JWT](https://www.npmjs.com/package/jsonwebtoken)** – Authentication tokens
+- **[Bcrypt](https://www.npmjs.com/package/bcrypt)** – Password hashing
+- **[Cloudinary](https://cloudinary.com/)** – Image storage and management
+- **[Multer](https://www.npmjs.com/package/multer)** – File upload handling
+- **[Nodemailer](https://nodemailer.com/)** – Email sending
+- **[OpenAI](https://www.npmjs.com/package/openai)** – AI integration
+- **[CORS](https://www.npmjs.com/package/cors), [Cookie-Parser](https://www.npmjs.com/package/cookie-parser), [Dotenv](https://www.npmjs.com/package/dotenv)** – Backend utilities
 - **[Nodemon](https://www.npmjs.com/package/nodemon) (dev)** – Auto-restart server during development
 
 
